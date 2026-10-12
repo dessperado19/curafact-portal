@@ -218,7 +218,7 @@ button{font-family:inherit;border-radius:12px}
     <h2>Pflegekasse (Empfänger des Nachweises)</h2>
     <label>Name</label><input type="text" id="kasse_name">
     <label>Anschrift (Straße Nr., PLZ Ort)</label><input type="text" id="kasse_anschrift">
-    <p class="note">Wird vorausgefüllt, wenn die Kasse in Studio hinterlegt ist; sonst leer lassen, Studio ergänzt sie.</p>
+    <p class="note">Wird aus der Kassenliste vorausgefüllt; bei unbekannter Kasse bitte Anschrift eintragen.</p>
   </div>
 
   <div class="box" id="unterlagenBox2">
@@ -1012,6 +1012,7 @@ function setV(id,v){var el=$(id);if(el&&v!=null&&v!=='')el.value=v}
     var tb=cfg.textbausteine;if(tb&&!Array.isArray(tb))tb=tb.bausteine;
     if(tb&&tb.length){BAUSTEINE=tb;buildToolbars()}
     unterlagenStand(k.dokumente||[]);
+    konfigPruefen(cfg);
     terminVorschlag();
     $('pageSub').textContent='Beratungsbesuch für '+(c.pflege_name||'');
   };
@@ -1019,11 +1020,29 @@ function setV(id,v){var el=$(id);if(el&&v!=null&&v!=='')el.value=v}
 })();
 
 function kasseEintragFuer(text){var t=String(text||'').toLowerCase(),ks=(CFG&&CFG.kassen)||[];for(var i=0;i<ks.length;i++){if((ks[i].match||[]).some(function(x){return t.indexOf(x)>=0}))return ks[i]}return null}
+function konfigPruefen(cfg){
+  var fehlt=[];
+  if(!(cfg.personen&&cfg.personen.length))fehlt.push('Beratungspersonen');
+  if(!(cfg.traeger&&cfg.traeger.map))fehlt.push('Träger-Daten (Briefkopf)');
+  if(!(cfg.kassen&&cfg.kassen.length))fehlt.push('Kassenliste');
+  if(!cfg.ik)fehlt.push('IK-Nummer');
+  var w=document.getElementById('cfgWarn');
+  if(!fehlt.length){if(w)w.remove();$('submitBtn').disabled=false;return}
+  if(!w){w=document.createElement('div');w.id='cfgWarn';w.style.cssText='background:#fde8e8;border:1px solid #f5b5b5;color:#8a1c1c;border-radius:12px;padding:12px 14px;margin:0 0 14px;font-weight:700';var h1=document.querySelector('.wrap h1');h1.parentNode.insertBefore(w,h1.nextSibling)}
+  w.textContent='Die Konfiguration ist unvollständig ('+fehlt.join(', ')+'). Ein Administrator muss sie in Curafact unter Kunden → Import einspielen, bevor ein Besuch gespeichert werden kann.';
+  $('submitBtn').disabled=true;
+}
+function sigFuerVereinbarungBox(){
+  var sv=$('sigFuerVereinb'),b=$('u_vereinbarung');if(!sv||!b)return;
+  sv.innerHTML='<label class="checkline"><input type="checkbox" id="sigfuer_vereinb"><span>Beratungsvereinbarung (§ 37 Abs. 3) – erstellt mit denselben Daten, siehe „Unterlagen der Beratungsstelle“</span></label>';
+  var a=$('sigfuer_vereinb');a.checked=b.checked;a.onchange=function(){b.checked=a.checked};b.onchange=function(){a.checked=b.checked};
+}
 function unterlagenStand(dok){
   var hat=function(art){return dok.filter(function(d){return d.art===art}).length>0}, hin=[];
   if(hat('datenschutz')){$('u_datenschutz').checked=false;hin.push('Die Datenschutzinformation liegt schon in der Akte.')}
   if(hat('vereinbarung')){$('u_vereinbarung').checked=false;hin.push('Die Beratungsvereinbarung liegt schon in der Akte.')}
   $('u_hinweis').textContent=hin.join(' ');
+  sigFuerVereinbarungBox();
 }
 /* Nächster Termin: Pflegegrad 4/5 = +2 Monate, sonst +5 Monate; Wochenende -> Freitag (wie Studio) */
 function terminVorschlag(force){

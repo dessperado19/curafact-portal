@@ -1238,6 +1238,7 @@ async function nachweisFuer(i){
   if(!window.NW||!window.PDFLib){msg('PDF-Baustein nicht geladen (Internetverbindung prüfen).',true);return}
   collect();
   var cf=await call('app_config_get');var cfg=(cf.ok&&cf.config)||{};
+  if(!cfg.ik||!(cfg.kassen&&cfg.kassen.length)){msg('Die Konfiguration (IK-Nummer, Kassenliste) fehlt – bitte einen Administrator unter Import einspielen lassen.',true);return}
   msg('Nachweis wird erstellt …');
   try{
     var assets=await NW.laden('');
@@ -1257,6 +1258,7 @@ async function unterlageErstellen(id){
   if(!window.DOK||!window.PDFLib){msg('PDF-Baustein nicht geladen (Internetverbindung prüfen).',true);return}
   collect();
   var cf=await call('app_config_get');var cfg=(cf.ok&&cf.config)||{};
+  if(!cfg.traeger||!cfg.traeger.map){msg('Die Konfiguration (Träger-Daten) fehlt – bitte einen Administrator unter Import einspielen lassen.',true);return}
   var t=new Date(),p=function(n){return String(n).padStart(2,'0')},datum=p(t.getDate())+'.'+p(t.getMonth()+1)+'.'+t.getFullYear();
   var a=String(c.data.pflege_anschrift||''),m=/\b\d{5}\s+(.+?)\s*$/.exec(a),ort=m?m[1].trim():(a.indexOf(',')>=0?a.split(',').pop().trim():'Rheda-Wiedenbrück');
   if(id==='vollmacht')ort='Rheda-Wiedenbrück';
