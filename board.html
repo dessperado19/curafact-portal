@@ -182,7 +182,7 @@ async function refresh(full){if(S.drag||S.modalOpen)return;if(await load(full))r
 
 /* ---------- Grundgerüst ---------- */
 function shell(){
-  S.root.innerHTML='<div class="bd"><div class="bdBar" id="bdBar"></div><div id="bdBody"></div><div class="bdToast" style="display:none"></div><div id="bdModalHost"></div></div>';
+  S.root.innerHTML='<div class="bd"><div class="bdBar" id="bdBar"></div><div id="bdBody"></div><div class="bdToast" style="display:none"></div><div id="bdModalHost"></div><div id="bdDlgHost"></div></div>';
 }
 function renderBar(){
   var h='<div class="bdTabs">'+S.lists.map(function(l){return'<button class="bdTab'+(l.id===S.listId?' on':'')+'" data-list="'+l.id+'">'+esc(l.name)+'</button>'}).join('')+'</div>';
@@ -346,7 +346,7 @@ function bindDrag(){
 /* ---------- Dialoge ---------- */
 function dlg(o){
   return new Promise(function(res){
-    var host=$('#bdModalHost');
+    var host=$('#bdDlgHost');
     host.innerHTML='<div class="bdModalBg" id="bdDlgBg"><div class="bdModal small"><h3>'+esc(o.title||'')+'</h3>'+(o.text?'<p style="color:var(--bd-muted)">'+esc(o.text)+'</p>':'')+(o.input!==undefined?'<input type="text" id="bdDlgIn" value="'+esc(o.input)+'">':'')+'<div class="bdRow" style="justify-content:flex-end;margin-top:16px"><button class="bdBtn" id="bdDlgNo">Abbrechen</button><button class="bdBtn '+(o.danger?'danger':'primary')+'" id="bdDlgOk">'+esc(o.ok||'OK')+'</button></div></div></div>';
     var close=function(v){host.innerHTML='';res(v)};
     var inp=$('#bdDlgIn',host);if(inp){inp.focus();inp.select();inp.addEventListener('keydown',function(e){if(e.key==='Enter')close(inp.value.trim()||null);if(e.key==='Escape')close(null)})}

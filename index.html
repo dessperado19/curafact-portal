@@ -1,820 +1,939 @@
-<!doctype html><html><head><meta charset="utf-8">
-<script>if(/[?&]t=/.test(location.search)){location.replace('/unterschrift'+location.search+location.hash);}</script>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>CuraFact Portal</title>
+<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Curafact</title>
 <style>
-:root{--blue:#0E4A8B;--blue2:#07345f;--cyan:#20C6D4;--bg:#f5f8fb;--border:#dbe7f0;--text:#16324f;--muted:#66788a}
+:root{--blue:#0E4A8B;--blue2:#07345f;--cyan:#20C6D4;--bg:#f5f8fb;--border:#dbe7f0;--text:#16324f;--muted:#66788a;--card:#fff}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text)}
-.wrap{max-width:900px;margin:0 auto;padding:16px 16px 60px}
-h1{font-size:20px;color:var(--blue);margin:14px 0 2px;letter-spacing:-.01em}
-.sub{color:var(--muted);font-size:13px;margin:0 0 18px}
-.box{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.box h2{font-size:14px;color:var(--blue);margin:0 0 12px;border-bottom:1px solid var(--border);padding-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
-label{display:block;font-size:12px;color:var(--muted);margin:10px 0 3px;font-weight:700}
-input[type=text],input[type=date],input[type=password],select,textarea{
-  width:100%;min-width:0;padding:11px;border:1px solid var(--border);border-radius:9px;font-size:15px;background:#fbfcfe;font-family:inherit;color:var(--text)}
-input:focus,textarea:focus{outline:2px solid var(--cyan);outline-offset:1px}
-textarea{min-height:70px;resize:vertical}
-button{border:0;border-radius:9px;font-size:14px;font-weight:700;padding:11px 16px;cursor:pointer;background:#fff;color:var(--blue);border:1px solid var(--border)}
+.wrap{max-width:1500px;margin:0 auto;padding:12px 14px 40px}
+#head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:4px 0 14px}
+#head img{height:34px}
+#head .who{flex:1;text-align:right;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#head .who strong{color:var(--blue)}
+button{font-family:inherit;border:1px solid var(--border);background:#fff;color:var(--blue);border-radius:10px;font-weight:700;padding:9px 14px;cursor:pointer;font-size:14px}
 button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
-button:disabled{opacity:.5;cursor:default}
-.err{color:#b91c1c;font-size:13px;margin-top:8px;min-height:16px}
-.mini{font-size:12px;color:var(--muted)}
-.row{display:flex;gap:8px;flex-wrap:wrap}
+#nav{display:flex;gap:8px;margin:0 0 16px;border-bottom:1px solid var(--border);padding-bottom:12px;overflow-x:auto}
+#nav button{flex:none;font-size:15px;padding:10px 18px}
+#nav button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+#login{max-width:340px;margin:70px auto 0;background:#fff;border-radius:16px;padding:28px;box-shadow:0 10px 40px rgba(14,74,139,.15);text-align:center}
+#login img{height:44px;margin-bottom:10px}
+#login h2{margin:0 0 4px;color:var(--blue)}
+#login p{margin:0 0 16px;color:var(--muted);font-size:13px}
+#login input{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:16px;text-align:center;margin-bottom:10px}
+#login input#code{font-size:24px;letter-spacing:7px}
+#loginErr{color:#b91c1c;font-size:13px;min-height:16px;margin:4px 0 10px}
 .hidden{display:none!important}
-
-/* --- Login --- */
-#loginBox{max-width:360px;margin:60px auto 0;text-align:center}
-#loginBox img{height:44px}
-
-/* --- App shell --- */
-#appHead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:10px 0 16px;flex-wrap:wrap}
-#appHead .who{font-size:13px;color:var(--muted)}
-#appHead .who strong{color:var(--blue)}
-.grid{display:grid;grid-template-columns:280px 1fr;gap:14px;align-items:start}
-@media(max-width:760px){.grid{grid-template-columns:1fr}}
-
-#custList{display:flex;flex-direction:column;gap:6px;max-height:520px;overflow:auto}
-.custItem{text-align:left;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer}
-.custItem:hover{border-color:var(--cyan)}
-.custItem.sel{border-color:var(--cyan);background:#effcfd}
-.custItem strong{font-size:13.5px;color:var(--text)}
-.custItem span{font-size:11.5px;color:var(--muted)}
-
-.detailGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
-@media(max-width:520px){.detailGrid{grid-template-columns:1fr}}
-.field{margin-bottom:6px}
-.field .k{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
-.field .v{font-size:14.5px;color:var(--text);margin-top:2px}
-
-.calcBox{background:#f2f8fc;border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:10px;break-inside:avoid;page-break-inside:avoid}
-.calcRow{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:2px 12px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
-.calcRow:last-child{border-bottom:0}
-.calcRow .k{color:var(--text);flex:1 1 auto;min-width:0}
-.calcRow .v{font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;flex:none}
-.calcRow.total{font-weight:700;color:var(--blue);border-top:2px solid var(--border);border-bottom:0;margin-top:2px;padding-top:8px}
-.calcTotalRow td{font-weight:700;color:var(--blue);border-top:2px solid var(--border);border-bottom:0}
-.calcTable td[colspan]{border-bottom:0;padding:3px 0}
-.refTableWrap{overflow-x:auto}
-.calcLegal p{font-size:12px;color:var(--muted)}
-.calcBox h4{margin:0 0 8px;font-size:12.5px;color:var(--blue);text-transform:uppercase;letter-spacing:.03em}
-.calcHead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:4px}
-.calcHead h3{margin:0 0 4px;font-size:15px;color:var(--blue)}
-.calcHead p{margin:2px 0}
-.calcTableWrap{overflow-x:auto}
-.calcTable{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
-.calcTable th,.calcTable td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
-.calcTable .num{text-align:right;font-variant-numeric:tabular-nums}
-.calcTable tfoot td{border-top:2px solid var(--border);border-bottom:0}
-.calcTable tr.brutto{background:#fef3c7}
-.calcTable tr.abzug{background:#fee2e2}
-.calcTable tr.netto{background:#dcfce7}
-.noteItem{padding:10px 0;border-bottom:1px solid var(--border)}
-.noteItem:last-child{border-bottom:0}
-.noteItem .meta{font-size:11.5px;color:var(--muted);margin-bottom:2px}
-.empty{color:var(--muted);font-size:13px;padding:8px 0}
-.badge{display:inline-block;background:#eef4fa;color:var(--blue);font-weight:700;font-size:10.5px;padding:1px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:.02em}
-.activityItem{padding:8px 0;border-bottom:1px solid var(--border);font-size:13.5px;line-height:1.5}
-.activityItem:last-child{border-bottom:0}
-.activityItem .badge{margin-right:6px;vertical-align:1px}
-.modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999}
-.modalBox{background:#fff;border-radius:14px;padding:22px;max-width:420px;width:92%;max-height:88vh;overflow:auto}
-.modalBox h3{margin:0 0 10px;color:var(--blue);font-size:16px}
-#faQrBox{display:flex;justify-content:center;margin:10px 0}
-#faUrl{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;background:#f2f5fb;padding:8px;border-radius:8px;word-break:break-all}
+</style></head><body>
+<div id="login" class="hidden">
+  <img src="logo.png" alt="Curafact">
+  <h2>Curafact</h2>
+  <p>Benutzername und Code aus der Authenticator-App</p>
+  <form id="loginForm">
+    <input id="user" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Benutzername">
+    <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••">
+    <div id="loginErr"></div>
+    <button class="primary" style="width:100%" type="submit">Anmelden</button>
+  </form>
+</div>
+<div class="wrap hidden" id="app">
+  <div id="head"><img src="logo.png" alt="Curafact"><span class="who" id="who"></span><button id="logout">Abmelden</button></div>
+  <div id="nav"><button data-tab="kunden">Kunden</button><button data-tab="board">Board</button></div>
+  <div id="tab-kunden"><div id="kdRoot"></div></div>
+  <div id="tab-board" class="hidden"><div id="bdRoot"></div></div>
+</div>
+<!--BD:START-->
+<style>
+.bd{--bd-blue:var(--blue,#0E4A8B);--bd-border:var(--border,#dbe7f0);--bd-muted:var(--muted,#66788a);--bd-text:var(--text,#16324f);--bd-cyan:var(--cyan,#20C6D4);--bd-bg:var(--bg,#f5f8fb);color:var(--bd-text);font-size:14px}
+.bd *{box-sizing:border-box}
+.bd button{font-family:inherit}
+.bdBar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.bdTabs,.bdViews{display:flex;gap:6px;flex-wrap:wrap}
+.bdTab,.bdViewBtn,.bdBtn{border:1px solid var(--bd-border);background:#fff;color:var(--bd-blue);border-radius:12px;padding:9px 13px;font-weight:800;cursor:pointer;font-size:14px}
+.bdTab.on,.bdViewBtn.on{background:var(--bd-blue);color:#fff;border-color:var(--bd-blue)}
+.bdBtn.primary{background:var(--bd-blue);color:#fff;border-color:var(--bd-blue)}
+.bdBtn.danger{color:#b91c1c}
+.bdBtn:hover,.bdTab:hover,.bdViewBtn:hover{border-color:var(--bd-cyan)}
+.bdBtn[disabled]{opacity:.5;cursor:default}
+.bdSearch{flex:1;min-width:150px;max-width:280px;border:1px solid var(--bd-border);border-radius:12px;padding:9px 12px;font-size:14px;background:#fff}
+.bdSpacer{flex:1}
+.bdChk{display:flex;gap:6px;align-items:center;font-weight:700;color:var(--bd-muted);cursor:pointer}
+.bdChk input{width:auto}
+.bdBoard{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;align-items:flex-start;-webkit-overflow-scrolling:touch}
+.bdCol{flex:0 0 285px;background:#eaf2f8;border-radius:16px;padding:10px;display:flex;flex-direction:column;max-height:calc(100vh - 230px);min-height:90px}
+.bdCol.over{outline:2px dashed var(--bd-cyan);background:#e0f6f9}
+.bdColHead{display:flex;align-items:center;gap:8px;margin:2px 2px 10px;font-weight:900;text-transform:uppercase;font-size:12px;letter-spacing:.03em;color:var(--bd-blue)}
+.bdDot{width:10px;height:10px;border-radius:50%;flex:none}
+.bdCount{background:#fff;border-radius:999px;padding:1px 8px;font-size:12px;color:var(--bd-muted)}
+.bdAdd{margin-left:auto;border:0;background:transparent;font-size:20px;line-height:1;color:var(--bd-blue);cursor:pointer;padding:0 4px}
+.bdCards{overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:30px;padding:2px}
+.bdCard{background:#fff;border:1px solid var(--bd-border);border-radius:12px;padding:10px 11px;cursor:pointer;box-shadow:0 3px 10px rgba(14,74,139,.06);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.bdCard:hover{border-color:var(--bd-cyan)}
+.bdCard.dragging{opacity:.35}
+.bdCard.inactive{opacity:.55;background:#f1f4f7;filter:grayscale(1)}
+.bdCard.inactive:hover{opacity:.85}
+.bdT{font-weight:800;line-height:1.3;word-break:break-word}
+.bdMeta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+.bdChip{font-size:12px;border-radius:999px;padding:2px 8px;background:#eef3f7;color:var(--bd-muted);font-weight:700;white-space:nowrap}
+.bdChip.late{background:#fde8e8;color:#b91c1c}
+.bdChip.done{background:#dff7ee;color:#087044}
+.bdChip.tag{background:#e9f8fa;color:#087884}
+.bdChip.dup{background:#fff4dd;color:#8a5a00}
+.bdAv{width:22px;height:22px;border-radius:50%;background:var(--bd-blue);color:#fff;font-size:10px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;margin-left:auto}
+.bdAvs{display:flex;margin-left:auto}.bdAvs .bdAv{margin-left:-6px;border:2px solid #fff}
+.bdPrio{width:8px;height:8px;border-radius:50%;display:inline-block}
+.bdMore{border:1px dashed var(--bd-border);background:transparent;border-radius:10px;padding:7px;color:var(--bd-muted);font-weight:700;cursor:pointer}
+.bdQuick{width:100%;border:1px solid var(--bd-cyan);border-radius:10px;padding:9px;font-size:14px;margin-bottom:8px}
+.bdGhost{position:fixed;z-index:100000;pointer-events:none;width:260px;opacity:.92;transform:rotate(2deg);box-shadow:0 14px 30px rgba(0,0,0,.25)}
+.bdTable{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--bd-border);border-radius:12px;overflow:hidden}
+.bdTable th{background:#f2f8fc;color:var(--bd-blue);text-align:left;font-size:12px;text-transform:uppercase;padding:10px}
+.bdTable td{padding:10px;border-top:1px solid var(--bd-border);vertical-align:top}
+.bdTable tr.row{cursor:pointer}.bdTable tr.row:hover{background:#f7fcfd}
+.bdCal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.bdCalHead{font-weight:900;color:var(--bd-muted);font-size:12px;text-align:center;padding:4px}
+.bdDay{background:#fff;border:1px solid var(--bd-border);border-radius:10px;min-height:92px;padding:5px;overflow:hidden}
+.bdDay.out{background:#f3f7fa;opacity:.7}.bdDay.today{border-color:var(--bd-cyan);box-shadow:0 0 0 2px #bff0f5}
+.bdDayNum{font-size:12px;font-weight:900;color:var(--bd-muted)}
+.bdEv{display:block;width:100%;text-align:left;border:0;background:#e6f0fa;color:var(--bd-blue);border-radius:6px;padding:3px 5px;margin-top:3px;font-size:12px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bdEv.done{background:#dff7ee;color:#087044}
+.bdMonth{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-weight:900;font-size:17px}
+.bdModalBg{position:fixed;inset:0;background:rgba(7,32,58,.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 12px}
+.bdModal{background:#fff;border-radius:18px;width:100%;max-width:760px;padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.bdModal.small{max-width:430px}
+.bdModal h3{margin:0 0 12px;color:var(--bd-blue)}
+.bdTitleIn{width:100%;font-size:20px;font-weight:900;border:1px solid transparent;border-radius:10px;padding:6px 8px;color:var(--bd-blue);background:transparent}
+.bdTitleIn:hover,.bdTitleIn:focus{border-color:var(--bd-border);background:#fff}
+.bdGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:14px 0}
+.bdGrid label,.bdLbl{display:block;font-size:12px;font-weight:900;color:var(--bd-muted);text-transform:uppercase;margin-bottom:4px}
+.bdGrid select,.bdGrid input,.bdModal textarea,.bdModal input[type=text],.bdModal input[type=date],.bdModal select{width:100%;border:1px solid var(--bd-border);border-radius:10px;padding:9px 10px;font-size:14px;font-family:inherit;background:#fff}
+.bdModal textarea{min-height:90px;resize:vertical}
+.bdSec{margin-top:18px}
+.bdSecHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.bdSecHead h4{margin:0;color:var(--bd-blue);font-size:15px}
+.bdPeople{display:flex;flex-wrap:wrap;gap:6px}
+.bdPerson{border:1px solid var(--bd-border);background:#fff;border-radius:999px;padding:5px 11px;cursor:pointer;font-weight:700;color:var(--bd-muted)}
+.bdPerson.on{background:var(--bd-blue);color:#fff;border-color:var(--bd-blue)}
+.bdCl{border:1px solid var(--bd-border);border-radius:12px;padding:10px;margin-bottom:10px;background:#fbfdff}
+.bdClHead{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.bdClHead b{flex:1;color:var(--bd-blue);cursor:pointer}
+.bdBar2{height:6px;background:#e3edf4;border-radius:99px;overflow:hidden;margin:4px 0 8px}.bdBar2 i{display:block;height:100%;background:var(--bd-cyan)}
+.bdIt{display:flex;gap:8px;align-items:flex-start;padding:5px 2px;border-bottom:1px solid #eef3f7}
+.bdIt:last-of-type{border-bottom:0}
+.bdIt input[type=checkbox]{width:18px;height:18px;margin-top:2px;flex:none}
+.bdIt span{flex:1;word-break:break-word;cursor:text}.bdIt.res span{text-decoration:line-through;color:var(--bd-muted)}
+.bdIt input[type=text]{flex:1;padding:4px 6px}
+.bdX{border:0;background:transparent;color:var(--bd-muted);cursor:pointer;font-size:16px;padding:0 4px}.bdX:hover{color:#b91c1c}
+.bdCm{background:#f4f8fb;border-radius:10px;padding:9px 11px;margin-bottom:8px}
+.bdCm small{color:var(--bd-muted);display:block;margin-bottom:3px}.bdCm p{margin:0;white-space:pre-wrap;word-break:break-word;color:var(--bd-text)}
+.bdLog{font-size:12px;color:var(--bd-muted);padding:2px 0}
+.bdFile{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #eef3f7}.bdFile a{flex:1;color:var(--bd-blue);font-weight:700;cursor:pointer;word-break:break-all}
+.bdRow{display:flex;gap:8px;align-items:center}
+.bdToast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0b457f;color:#fff;border-radius:12px;padding:10px 16px;z-index:100001;font-weight:700;max-width:90vw}.bdToast.err{background:#b91c1c}
+.bdEmpty{background:#fff;border:1px solid var(--bd-border);border-radius:14px;padding:18px;color:var(--bd-muted)}
+.bdProg{height:10px;background:#e3edf4;border-radius:99px;overflow:hidden;margin:10px 0}.bdProg i{display:block;height:100%;background:var(--bd-blue);width:0}
+.bdLogBox{background:#f2f6f9;border-radius:10px;padding:10px;font-size:12px;max-height:160px;overflow:auto;white-space:pre-wrap}
+@media(max-width:700px){.bdTabs{flex-wrap:nowrap;overflow-x:auto;width:100%;padding-bottom:4px}.bdTab{white-space:nowrap;flex:none}.bdViews{width:100%}.bdViewBtn{flex:1}.bdSearch{max-width:none;min-width:0;flex:1 1 100%}.bdBar{gap:8px}.bdBtn{padding:8px 11px}.bdGrid{grid-template-columns:1fr}.bdCol{flex-basis:82vw;max-height:calc(100vh - 260px)}.bdModalBg{padding:0}.bdModal{border-radius:0;min-height:100vh;max-width:none}.bdDay{min-height:60px}.bdEv{font-size:10px}}
 </style>
-</head>
-<body>
-<div class="wrap">
-
-  <div id="loginBox">
-    <img src="logo.png" onerror="this.style.display='none'">
-    <h1 style="margin-top:6px">CuraFact Portal</h1>
-    <p class="sub">Kundendaten, Notizen und Board von unterwegs</p>
-    <div class="box" style="text-align:left">
-      <label>Benutzername</label>
-      <input type="text" id="loginUser" autocomplete="username" placeholder="z.B. onder">
-      <label>Code aus der Authenticator-App</label>
-      <input type="text" id="loginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" style="letter-spacing:6px;text-align:center;font-size:20px">
-      <div class="err" id="loginErr"></div>
-      <button class="primary" id="loginBtn" style="width:100%;margin-top:10px">Anmelden</button>
-    </div>
-  </div>
-
-  <div id="appBox" class="hidden">
-    <div id="appHead">
-      <div>
-        <h1 style="margin:0">CuraFact Portal</h1>
-        <p class="sub" style="margin:2px 0 0">Kundendaten, Notizen und Board</p>
-      </div>
-      <div class="row" style="align-items:center">
-        <span class="who">Angemeldet als <strong id="whoName"></strong></span>
-        <button id="logoutBtn">Abmelden</button>
-      </div>
-    </div>
-
-    <div class="grid">
-      <div>
-        <div class="box" style="padding:12px">
-          <input type="text" id="custSearch" placeholder="Kunde suchen…" style="margin-bottom:10px">
-          <div id="custList"><div class="empty">Lade Kunden …</div></div>
-        </div>
-        <div class="box">
-          <h2>Fernaufnahme – Neuer Kunde</h2>
-          <p class="mini">Link/QR-Code an einen neuen Kunden schicken, um Stammdaten von unterwegs aufzunehmen.</p>
-          <div class="row" style="margin-top:8px">
-            <button id="faNewIntakeBtn">Abrechnung</button>
-            <button id="faNewBeratungBtn">Beratung</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="detailBox">
-        <div class="box"><p class="empty">Bitte links einen Kunden auswählen.</p></div>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<div id="faModal" class="modalOverlay hidden">
-  <div class="modalBox">
-    <h3>Fernaufnahme</h3>
-    <p class="mini" id="faModalLabel"></p>
-    <p class="mini">Link per WhatsApp/Mail senden oder QR-Code scannen lassen.</p>
-    <div id="faQrBox"></div>
-    <p id="faUrl"></p>
-    <div class="row" style="margin-top:10px">
-      <button id="faOpenBtn">Link öffnen</button>
-      <button id="faShareBtn">Teilen</button>
-      <button id="faCopyBtn">Link kopieren</button>
-      <button id="faCloseBtn">Schließen</button>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-const FN_BASE = "https://vdqumlxjmgqrmwlxqwre.supabase.co/functions/v1";
-const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkcXVtbHhqbWdxcm13bHhxd3JlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg0NTg0NDcsImV4cCI6MjA3NDAzNDQ0N30.sG8vMck4tSDWwsTay_tUujlRDruFjscrrMOhmlkj8Ws";
-
-function esc(v){return String(v??'').replace(/[&<>"]/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]))}
-function eur(n){return (Math.round(n||0)).toLocaleString('de-DE')+' €'}
-
-/* ===== Nachweis-Berechnung (Pflegegeld/Pflegesachleistung/Umwandlung) =====
-   Dieselbe Formel wie in der Fernaufnahme (intake.html) - hier fuer
-   BESTEHENDE Kunden direkt aus deren gespeicherten Pflegegrad-Phasen
-   berechnet (Daten kommen im deutschen Datumsformat TT.MM.JJJJ, wie sie
-   die Desktop-App speichert - anders als bei der Fernaufnahme, die
-   frische <input type="date"> ISO-Werte hat). */
-const PFLEGEGELD_TBL={
-  2021:{1:0,2:316,3:545,4:728,5:901},
-  2022:{1:0,2:316,3:545,4:728,5:901},
-  2023:{1:0,2:316,3:545,4:728,5:901},
-  2024:{1:0,2:332,3:573,4:765,5:947},
-  2025:{1:0,2:347,3:599,4:800,5:990}
-};
-const PSL_TBL={
-  2021:{1:0,2:689,3:1298,4:1612,5:1995},
-  2022:{1:0,2:689,3:1298,4:1612,5:1995},
-  2023:{1:0,2:724,3:1363,4:1693,5:2095},
-  2024:{1:0,2:761,3:1432,4:1778,5:2200},
-  2025:{1:0,2:796,3:1497,4:1859,5:2299}
-};
-const ENTL_TBL={2021:125,2022:125,2023:125,2024:125,2025:131};
-const CALC_TABLE_MIN_YEAR=2021, CALC_TABLE_MAX_YEAR=2025;
-
-function calcParseDE(v){
-  if(!v)return null;
-  const m=String(v).trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-  if(!m)return null;
-  const d=+m[1],mo=+m[2],y=+m[3];
-  const dt=new Date(y,mo-1,d,12);
-  return (dt.getFullYear()===y&&dt.getMonth()===mo-1&&dt.getDate()===d)?dt:null;
+(function(){
+'use strict';
+var S={lists:[],tasks:new Map(),users:[],listId:null,view:'board',q:'',mine:false,allLists:false,since:null,month:new Date(),root:null,timer:null,drag:null,more:{},loaded:false};
+var PRIO={urgent:['Dringend','#b91c1c'],high:['Hoch','#e07a00'],normal:['Normal','#1090e0'],low:['Niedrig','#66788a']};
+function H(){return window.BD_HOST||{}}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function $(s,r){return (r||S.root).querySelector(s)}
+function $$(s,r){return Array.prototype.slice.call((r||S.root).querySelectorAll(s))}
+function store(k,v){try{if(v===undefined)return localStorage.getItem('bd_'+k);localStorage.setItem('bd_'+k,v)}catch(e){return null}}
+async function call(a,p){
+  try{var r=await H().call(a,p||{});if(!r)return{ok:false,message:'Keine Antwort vom Server.'};return r}
+  catch(e){return{ok:false,message:'Fehler: '+e}}
 }
-function calcAtNoon(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate(),12)}
-function calcFirstOfMonth(d){return new Date(d.getFullYear(),d.getMonth(),1,12)}
-function calcAddMonths(d,n){return new Date(d.getFullYear(),d.getMonth()+n,1,12)}
-function calcMonthKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
+var toastT;
+function msg(t,err){var el=$('.bdToast');el.textContent=t;el.className='bdToast'+(err?' err':'');el.style.display='block';clearTimeout(toastT);toastT=setTimeout(function(){el.style.display='none'},err?6000:2500)}
+function fmtDate(d){if(!d)return'';var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d);return m?m[3]+'.'+m[2]+'.'+m[1]:d}
+function fmtTs(t){if(!t)return'';var d=new Date(t);return isNaN(d)?'':d.toLocaleDateString('de-DE')+' '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}
+function todayStr(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function ymd(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
+function curList(){return S.lists.find(function(l){return l.id===S.listId})||null}
+function statuses(l){var a=(l&&Array.isArray(l.statuses))?l.statuses.slice():[];var rank=function(s){return String(s.name).toLowerCase()==='nicht aktiv'?2:(s.type==='closed'?1:0)};return a.map(function(s,i){return[s,i]}).sort(function(x,y){return rank(x[0])-rank(y[0])||x[1]-y[1]}).map(function(x){return x[0]})}
+function isClosedStatus(l,s){var x=statuses(l).find(function(z){return z.name===s});return !!x&&(x.type==='closed'||x.type==='done')}
+function listOf(t){return S.lists.find(function(l){return l.id===t.list_id})}
+var PREFIX=['Pflegebedürftiger: ','Pflegeberatung: '];
+function shownTitle(t){var n=t.title||'';for(var i=0;i<PREFIX.length;i++){if(n.indexOf(PREFIX[i])===0)return n.slice(PREFIX[i].length)}return n}
+function initials(u){var x=S.users.find(function(z){return z.username===u});var n=(x&&x.display_name)||u||'?';var p=n.trim().split(/\s+/);return((p[0]||'?')[0]+((p[1]||'')[0]||'')).toUpperCase()}
+function userName(u){var x=S.users.find(function(z){return z.username===u});return(x&&x.display_name)||u||''}
+function me(){return(H().user||{}).username||''}
+function visible(t){
+  if(!S.allLists&&t.list_id!==S.listId)return false;
+  if(S.mine&&(t.assignees||[]).indexOf(me())<0)return false;
+  if(S.q){var h=((t.title||'')+' '+(t.customer_name||'')+' '+(t.tags||[]).join(' ')).toLowerCase();if(h.indexOf(S.q.toLowerCase())<0)return false}
+  return true;
+}
 
-function rechnePflegegrade(phasen){
-  const today=calcAtNoon(new Date());
-  const todayMonth=calcFirstOfMonth(today);
-  const cutoff=new Date(today.getFullYear()-4,0,1,12);
-  const monthMap=new Map();
+/* ---------- Laden ---------- */
+async function load(full){
+  var r=await call('board_load',(full||!S.since)?{}:{since:S.since});
+  if(!r.ok){msg(r.message||'Board konnte nicht geladen werden.',true);return false}
+  if(r.full)S.tasks=new Map();
+  if(r.lists)S.lists=r.lists;
+  if(r.users)S.users=r.users;
+  (r.tasks||[]).forEach(function(t){if(t.deleted_at)S.tasks.delete(t.id);else S.tasks.set(t.id,t)});
+  S.since=new Date(Date.parse(r.server_time)-5000).toISOString();
+  if(!S.listId||!curList()){var saved=store('list');S.listId=(S.lists.find(function(l){return l.id===saved})||S.lists[0]||{}).id||null}
+  S.loaded=true;
+  return true;
+}
+async function refresh(full){if(S.drag||S.modalOpen)return;if(await load(full))render()}
 
-  (phasen||[]).forEach(ph=>{
-    const stufe=Number(ph.stufe)||2;
-    const dVon=calcParseDE(ph.von);
-    // Jede Phase gilt ab ihrem "Von" bis heute als laufend - unabhaengig von
-    // "fortlaufend"-Haekchen oder eingetragenem "Bis" (das nur fuer die
-    // interne monatliche Abrechnung in der App relevant ist, nicht hier).
-    // Ueberlappende Monate werden weiter unten der Phase mit dem spaeteren
-    // "Von" zugeordnet, dadurch uebernimmt eine neuere Phase automatisch
-    // korrekt ab ihrem Start - eine Phase endet effektiv nur durch eine
-    // spaetere Phase oder durch Deaktivieren des Kunden.
-    const dBis=today;
-    if(!dVon||dBis<dVon)return;
-    let startM=calcFirstOfMonth(dVon);
-    const endM=calcFirstOfMonth(dBis);
-    const minM=new Date(CALC_TABLE_MIN_YEAR,0,1,12);
-    if(startM<minM)startM=minM;
-    if(endM<startM)return;
-    let cur=new Date(startM);
-    while(cur<=endM){
-      const key=calcMonthKey(cur);
-      const prev=monthMap.get(key);
-      const rec={stufe, entlastung_genommen:!!ph.entlastung_genommen, startedAt:dVon};
-      if(!prev||rec.startedAt>prev.startedAt)monthMap.set(key,rec);
-      cur=calcAddMonths(cur,1);
-    }
+/* ---------- Grundgerüst ---------- */
+function shell(){
+  S.root.innerHTML='<div class="bd"><div class="bdBar" id="bdBar"></div><div id="bdBody"></div><div class="bdToast" style="display:none"></div><div id="bdModalHost"></div><div id="bdDlgHost"></div></div>';
+}
+function renderBar(){
+  var h='<div class="bdTabs">'+S.lists.map(function(l){return'<button class="bdTab'+(l.id===S.listId?' on':'')+'" data-list="'+l.id+'">'+esc(l.name)+'</button>'}).join('')+'</div>';
+  h+='<div class="bdViews">'+[['board','Board'],['list','Liste'],['cal','Kalender']].map(function(v){return'<button class="bdViewBtn'+(S.view===v[0]?' on':'')+'" data-view="'+v[0]+'">'+v[1]+'</button>'}).join('')+'</div>';
+  h+='<input class="bdSearch" id="bdQ" placeholder="Suchen …" value="'+esc(S.q)+'">';
+  h+='<label class="bdChk"><input type="checkbox" id="bdMine"'+(S.mine?' checked':'')+'> Meine</label>';
+  if(S.view==='cal')h+='<label class="bdChk"><input type="checkbox" id="bdAll"'+(S.allLists?' checked':'')+'> alle Listen</label>';
+  h+='<span class="bdSpacer"></span><button class="bdBtn primary" id="bdNew">+ Aufgabe</button><button class="bdBtn" id="bdTrash" title="Papierkorb">Papierkorb</button>';
+  if(H().isAdmin)h+='<button class="bdBtn" id="bdDupes" title="Doppelte Kunden-Aufgaben zusammenführen">Duplikate</button><button class="bdBtn" id="bdImport">Aus ClickUp übernehmen</button>';
+  h+='<button class="bdBtn" id="bdReload" title="Neu laden">↻</button>';
+  $('#bdBar').innerHTML=h;
+}
+function render(){
+  if(!S.root)return;
+  var keep=$('.bdBoard');var sl=keep?keep.scrollLeft:0;
+  renderBar();
+  if(!S.lists.length){$('#bdBody').innerHTML='<div class="bdEmpty">Noch keine Listen. Ein Administrator kann die Aufgaben mit „Aus ClickUp übernehmen“ importieren.</div>';return}
+  if(S.view==='list')renderList();else if(S.view==='cal')renderCal();else renderBoard();
+  var b=$('.bdBoard');if(b)b.scrollLeft=sl;
+}
+
+/* ---------- Board ---------- */
+function cardHtml(t){
+  var l=listOf(t),closed=isClosedStatus(l,t.status),m='';
+  if(t.priority&&PRIO[t.priority]&&t.priority!=='normal')m+='<span class="bdPrio" title="'+PRIO[t.priority][0]+'" style="background:'+PRIO[t.priority][1]+'"></span>';
+  if(t.due_date)m+='<span class="bdChip'+((!closed&&t.due_date<todayStr())?' late':'')+'">'+fmtDate(t.due_date)+'</span>';
+  if(t.chk_total)m+='<span class="bdChip'+(t.chk_done===t.chk_total?' done':'')+'">☑ '+t.chk_done+'/'+t.chk_total+'</span>';
+  if(t.n_comments)m+='<span class="bdChip">💬 '+t.n_comments+'</span>';
+  if(t.n_files)m+='<span class="bdChip">📎 '+t.n_files+'</span>';
+  (t.tags||[]).forEach(function(g){m+='<span class="bdChip '+(g==='Duplikat?'?'dup':'tag')+'">'+esc(g)+'</span>'});
+  var av=(t.assignees||[]).slice(0,3).map(function(u){return'<span class="bdAv" title="'+esc(userName(u))+'">'+esc(initials(u))+'</span>'}).join('');
+  if(av)m+='<span class="bdAvs">'+av+'</span>';
+  return'<div class="bdCard'+(String(t.status).toLowerCase()==='nicht aktiv'?' inactive':'')+'" data-id="'+t.id+'"><div class="bdT">'+esc(shownTitle(t))+'</div>'+(m?'<div class="bdMeta">'+m+'</div>':'')+'</div>';
+}
+function renderBoard(){
+  var l=curList();var st=statuses(l);
+  var tasks=Array.from(S.tasks.values()).filter(function(t){return t.list_id===S.listId&&visible(t)});
+  var h='<div class="bdBoard">';
+  st.forEach(function(s){
+    var cs=tasks.filter(function(t){return t.status===s.name});
+    var closed=s.type==='closed'||s.type==='done';
+    cs.sort(closed?function(a,b){return String(b.closed_at||b.updated_at).localeCompare(String(a.closed_at||a.updated_at))}:function(a,b){return a.position-b.position});
+    var lim=closed?(S.more[s.name]||15):9999;
+    h+='<div class="bdCol" data-status="'+esc(s.name)+'"><div class="bdColHead"><span class="bdDot" style="background:'+esc(s.color||'#66788a')+'"></span>'+esc(s.name)+'<span class="bdCount">'+cs.length+'</span><button class="bdAdd" data-add="'+esc(s.name)+'" title="Aufgabe hinzufügen">+</button></div><div class="bdCards">';
+    h+='<div class="bdQuickHost"></div>';
+    cs.slice(0,lim).forEach(function(t){h+=cardHtml(t)});
+    if(cs.length>lim)h+='<button class="bdMore" data-more="'+esc(s.name)+'">'+(cs.length-lim)+' weitere anzeigen</button>';
+    h+='</div></div>';
   });
+  $('#bdBody').innerHTML=h+'</div>';
+}
 
-  const pastDetails=[]; let sumRueckwirkend=0; let futureRate=null;
-  monthMap.forEach((rec,key)=>{
-    const parts=key.split('-'); const jahrAnzeige=+parts[0], monatAnzeige=+parts[1];
-    const jahrCalc=PFLEGEGELD_TBL[jahrAnzeige]?jahrAnzeige:CALC_TABLE_MAX_YEAR;
-    const pg=(PFLEGEGELD_TBL[jahrCalc]||{})[rec.stufe]||0;
-    const psl=(PSL_TBL[jahrCalc]||{})[rec.stufe]||0;
-    const entl=ENTL_TBL[jahrCalc]||0;
-    const zukunftOhne=0.4*psl+0.6*pg;
-    const zukunftMit=zukunftOhne+entl;
-    const monatBetragMit=zukunftMit-pg;
-    const monatBetragOhne=zukunftOhne-pg;
-    const monatDelta=rec.entlastung_genommen?monatBetragOhne:monatBetragMit;
-    const monthDate=new Date(jahrAnzeige,monatAnzeige-1,1,12);
+/* ---------- Liste ---------- */
+function renderList(){
+  var l=curList();
+  var tasks=Array.from(S.tasks.values()).filter(function(t){return t.list_id===S.listId&&visible(t)});
+  var order=statuses(l).map(function(s){return s.name});
+  tasks.sort(function(a,b){return order.indexOf(a.status)-order.indexOf(b.status)||a.position-b.position});
+  var h='<div style="overflow:auto"><table class="bdTable"><tr><th>Aufgabe</th><th>Status</th><th>Fällig</th><th>Zugewiesen</th><th>Checkliste</th></tr>';
+  tasks.forEach(function(t){
+    var s=statuses(l).find(function(z){return z.name===t.status})||{};
+    h+='<tr class="row" data-id="'+t.id+'"><td><b>'+esc(shownTitle(t))+'</b>'+((t.tags||[]).map(function(g){return' <span class="bdChip tag">'+esc(g)+'</span>'}).join(''))+'</td><td><span class="bdDot" style="display:inline-block;background:'+esc(s.color||'#66788a')+'"></span> '+esc(t.status)+'</td><td>'+fmtDate(t.due_date)+'</td><td>'+(t.assignees||[]).map(function(u){return esc(userName(u))}).join(', ')+'</td><td>'+(t.chk_total?t.chk_done+'/'+t.chk_total:'')+'</td></tr>';
+  });
+  $('#bdBody').innerHTML=h+'</table></div>'+(tasks.length?'':'<div class="bdEmpty" style="margin-top:10px">Keine Aufgaben.</div>');
+}
 
-    if(monthDate<todayMonth){
-      if(monthDate>=cutoff){
-        sumRueckwirkend+=monatDelta;
-        pastDetails.push({jahr:jahrAnzeige, monat:monatAnzeige, stufe:rec.stufe, monat_betrag:monatDelta});
+/* ---------- Kalender ---------- */
+function renderCal(){
+  var y=S.month.getFullYear(),mo=S.month.getMonth();
+  var first=new Date(y,mo,1),offs=(first.getDay()+6)%7,days=new Date(y,mo+1,0).getDate();
+  var MN=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  var byDay={};
+  S.tasks.forEach(function(t){if(t.due_date&&visible(t)){(byDay[t.due_date]=byDay[t.due_date]||[]).push(t)}});
+  var h='<div class="bdMonth"><button class="bdBtn" data-mon="-1">‹</button><span>'+MN[mo]+' '+y+'</span><button class="bdBtn" data-mon="1">›</button><button class="bdBtn" data-mon="0">Heute</button></div><div class="bdCal">';
+  ['Mo','Di','Mi','Do','Fr','Sa','So'].forEach(function(d){h+='<div class="bdCalHead">'+d+'</div>'});
+  var total=Math.ceil((offs+days)/7)*7;
+  for(var i=0;i<total;i++){
+    var dn=i-offs+1,d=new Date(y,mo,dn),key=ymd(d.getFullYear(),d.getMonth(),d.getDate());
+    h+='<div class="bdDay'+(dn<1||dn>days?' out':'')+(key===todayStr()?' today':'')+'"><div class="bdDayNum">'+d.getDate()+'</div>';
+    (byDay[key]||[]).forEach(function(t){h+='<button class="bdEv'+(isClosedStatus(listOf(t),t.status)?' done':'')+'" data-id="'+t.id+'" title="'+esc(shownTitle(t))+'">'+esc(shownTitle(t))+'</button>'});
+    h+='</div>';
+  }
+  $('#bdBody').innerHTML=h+'</div>';
+}
+
+/* ---------- Ziehen (Maus und Touch) ---------- */
+function startDrag(card,x,y){
+  var id=card.dataset.id,t=S.tasks.get(id);if(!t)return;
+  var g=card.cloneNode(true);g.className='bdCard bdGhost';document.body.appendChild(g);
+  card.classList.add('dragging');
+  S.drag={id:id,card:card,ghost:g,col:null};
+  moveDrag(x,y);
+}
+function colAt(x,y){
+  S.drag.ghost.style.display='none';var el=document.elementFromPoint(x,y);S.drag.ghost.style.display='';
+  return el&&el.closest?el.closest('.bdCol'):null;
+}
+function moveDrag(x,y){
+  var d=S.drag;if(!d)return;
+  d.ghost.style.left=(x-130)+'px';d.ghost.style.top=(y-20)+'px';
+  var c=colAt(x,y);
+  if(c!==d.col){if(d.col)d.col.classList.remove('over');if(c)c.classList.add('over');d.col=c}
+  var b=$('.bdBoard');
+  if(b){var r=b.getBoundingClientRect();if(x<r.left+50)b.scrollLeft-=14;else if(x>r.right-50)b.scrollLeft+=14}
+}
+function endDrag(x,y){
+  var d=S.drag;if(!d)return;
+  var col=colAt(x,y)||d.col;
+  d.ghost.remove();d.card.classList.remove('dragging');$$('.bdCol.over').forEach(function(c){c.classList.remove('over')});
+  S.drag=null;
+  if(!col)return;
+  var status=col.dataset.status;
+  var others=$$('.bdCard',col).filter(function(c){return c!==d.card&&!c.classList.contains('bdGhost')});
+  var idx=others.length;
+  for(var i=0;i<others.length;i++){var r=others[i].getBoundingClientRect();if(y<r.top+r.height/2){idx=i;break}}
+  var pos=function(i){var t=S.tasks.get(others[i].dataset.id);return t?Number(t.position):0};
+  var np;
+  if(!others.length)np=1000;else if(idx===0)np=pos(0)-1000;else if(idx>=others.length)np=pos(others.length-1)+1000;else np=(pos(idx-1)+pos(idx))/2;
+  var t=S.tasks.get(d.id);if(!t)return;
+  if(t.status===status&&Math.abs(np-Number(t.position))<1e-9)return;
+  var old={status:t.status,position:t.position};
+  t.status=status;t.position=np;render();
+  call('board_task_move',{id:d.id,status:status,position:np}).then(function(r){
+    if(!r.ok){t.status=old.status;t.position=old.position;render();msg(r.message||'Verschieben fehlgeschlagen.',true)}
+    else if(r.task){S.tasks.set(d.id,Object.assign({},t,{closed_at:r.task.closed_at,updated_at:r.task.updated_at}));render()}
+  });
+}
+function bindDrag(){
+  var root=S.root,st=null,TH=6;
+  root.addEventListener('mousedown',function(e){
+    if(e.button!==0)return;var c=e.target.closest('.bdCard:not(.bdGhost)');if(!c||!root.contains(c))return;
+    st={card:c,x:e.clientX,y:e.clientY,touch:false};
+  });
+  window.addEventListener('mousemove',function(e){
+    if(S.drag){moveDrag(e.clientX,e.clientY);e.preventDefault();return}
+    if(st&&!st.touch&&(Math.abs(e.clientX-st.x)>TH||Math.abs(e.clientY-st.y)>TH)){startDrag(st.card,e.clientX,e.clientY);st.started=true}
+  });
+  window.addEventListener('mouseup',function(e){
+    if(S.drag){S.dragJustEnded=true;setTimeout(function(){S.dragJustEnded=false},50);endDrag(e.clientX,e.clientY)}
+    st=null;
+  });
+  root.addEventListener('touchstart',function(e){
+    var c=e.target.closest('.bdCard:not(.bdGhost)');if(!c)return;var t=e.touches[0];
+    st={card:c,x:t.clientX,y:t.clientY,touch:true};
+    clearTimeout(st.timer);
+    st.timer=setTimeout(function(){if(st&&st.touch&&!S.drag){startDrag(st.card,st.x,st.y);if(navigator.vibrate)navigator.vibrate(15)}},380);
+  },{passive:true});
+  root.addEventListener('touchmove',function(e){
+    var t=e.touches[0];
+    if(S.drag){e.preventDefault();moveDrag(t.clientX,t.clientY);return}
+    if(st&&st.touch&&(Math.abs(t.clientX-st.x)>TH||Math.abs(t.clientY-st.y)>TH)){clearTimeout(st.timer);st=null}
+  },{passive:false});
+  function tEnd(e){
+    if(st)clearTimeout(st.timer);
+    if(S.drag){var t=(e.changedTouches&&e.changedTouches[0])||{clientX:0,clientY:0};S.dragJustEnded=true;setTimeout(function(){S.dragJustEnded=false},50);endDrag(t.clientX,t.clientY)}
+    st=null;
+  }
+  root.addEventListener('touchend',tEnd);root.addEventListener('touchcancel',tEnd);
+}
+
+/* ---------- Dialoge ---------- */
+function dlg(o){
+  return new Promise(function(res){
+    var host=$('#bdDlgHost');
+    host.innerHTML='<div class="bdModalBg" id="bdDlgBg"><div class="bdModal small"><h3>'+esc(o.title||'')+'</h3>'+(o.text?'<p style="color:var(--bd-muted)">'+esc(o.text)+'</p>':'')+(o.input!==undefined?'<input type="text" id="bdDlgIn" value="'+esc(o.input)+'">':'')+'<div class="bdRow" style="justify-content:flex-end;margin-top:16px"><button class="bdBtn" id="bdDlgNo">Abbrechen</button><button class="bdBtn '+(o.danger?'danger':'primary')+'" id="bdDlgOk">'+esc(o.ok||'OK')+'</button></div></div></div>';
+    var close=function(v){host.innerHTML='';res(v)};
+    var inp=$('#bdDlgIn',host);if(inp){inp.focus();inp.select();inp.addEventListener('keydown',function(e){if(e.key==='Enter')close(inp.value.trim()||null);if(e.key==='Escape')close(null)})}
+    $('#bdDlgOk',host).onclick=function(){close(inp?(inp.value.trim()||null):true)};
+    $('#bdDlgNo',host).onclick=function(){close(inp?null:false)};
+  });
+}
+
+/* ---------- Aufgabe öffnen ---------- */
+function bytesFmt(n){if(!n)return'';return n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB'}
+async function openTask(id){
+  var r=await call('board_task_get',{id:id});
+  if(!r.ok){msg(r.message||'Aufgabe konnte nicht geladen werden.',true);return}
+  S.modalOpen=true;S.cur=r;drawTask();
+}
+function closeTask(){S.modalOpen=false;S.cur=null;$('#bdModalHost').innerHTML='';render()}
+async function reopen(){if(!S.cur)return;var r=await call('board_task_get',{id:S.cur.task.id});if(r.ok){S.cur=r;S.tasks.set(r.task.id,Object.assign({},S.tasks.get(r.task.id)||{},r.task));drawTask()}else msg(r.message,true)}
+async function saveField(f){
+  var t=S.cur.task;var r=await call('board_task_save',Object.assign({id:t.id},f));
+  if(!r.ok){msg(r.message||'Speichern fehlgeschlagen.',true);return false}
+  S.cur.task=r.task;S.tasks.set(r.task.id,Object.assign({},S.tasks.get(r.task.id)||{},r.task));return true;
+}
+function drawTask(){
+  var c=S.cur,t=c.task,l=listOf(t);
+  var scroll=($('.bdModalBg')||{}).scrollTop||0;
+  var h='<div class="bdModalBg" id="bdTaskBg"><div class="bdModal">';
+  h+='<div class="bdRow"><input class="bdTitleIn" id="tTitle" value="'+esc(t.title)+'"><button class="bdBtn" id="tClose">Schließen</button></div>';
+  h+='<div class="bdGrid"><div><label>Status</label><select id="tStatus">'+statuses(l).map(function(s){return'<option'+(s.name===t.status?' selected':'')+'>'+esc(s.name)+'</option>'}).join('')+'</select></div>';
+  h+='<div><label>Fällig am</label><input type="date" id="tDue" value="'+esc(t.due_date||'')+'"></div>';
+  h+='<div><label>Priorität</label><select id="tPrio"><option value="">–</option>'+Object.keys(PRIO).map(function(k){return'<option value="'+k+'"'+(t.priority===k?' selected':'')+'>'+PRIO[k][0]+'</option>'}).join('')+'</select></div>';
+  h+='<div><label>Liste</label><input type="text" value="'+esc((l||{}).name||'')+'" disabled></div></div>';
+  h+='<div class="bdSec" style="margin-top:0"><label class="bdLbl">Zugewiesen</label><div class="bdPeople">'+S.users.map(function(u){return'<button class="bdPerson'+((t.assignees||[]).indexOf(u.username)>=0?' on':'')+'" data-user="'+esc(u.username)+'">'+esc(u.display_name||u.username)+'</button>'}).join('')+'</div></div>';
+  h+='<div class="bdSec"><label class="bdLbl">Tags</label><div class="bdMeta" style="margin:0 0 6px">'+(t.tags||[]).map(function(g){return'<span class="bdChip tag">'+esc(g)+' <button class="bdX" data-deltag="'+esc(g)+'">×</button></span>'}).join('')+'</div><input type="text" id="tTag" placeholder="Tag eingeben und Enter drücken"></div>';
+  h+='<div class="bdSec"><label class="bdLbl">Beschreibung</label><textarea id="tDesc" placeholder="Beschreibung …">'+esc(t.description||'')+'</textarea></div>';
+  // Checklisten
+  h+='<div class="bdSec"><div class="bdSecHead"><h4>Checklisten</h4><button class="bdBtn" id="clAdd">+ Checkliste</button></div>';
+  (c.checklists||[]).forEach(function(cl){
+    var n=cl.items.length,d=cl.items.filter(function(i){return i.resolved}).length;
+    h+='<div class="bdCl" data-cl="'+cl.id+'"><div class="bdClHead"><b data-clren="'+cl.id+'" title="Umbenennen">'+esc(cl.name)+'</b><span class="bdChip">'+d+'/'+n+'</span><button class="bdX" data-cldel="'+cl.id+'" title="Checkliste löschen">🗑</button></div>';
+    h+='<div class="bdBar2"><i style="width:'+(n?Math.round(d*100/n):0)+'%"></i></div>';
+    cl.items.forEach(function(i){h+='<div class="bdIt'+(i.resolved?' res':'')+'" data-it="'+i.id+'"><input type="checkbox" data-itchk="'+i.id+'"'+(i.resolved?' checked':'')+'><span data-itedit="'+i.id+'">'+esc(i.name)+'</span><button class="bdX" data-itdel="'+i.id+'">×</button></div>'});
+    h+='<input type="text" class="bdItNew" data-cl="'+cl.id+'" placeholder="Eintrag hinzufügen …" style="margin-top:8px"></div>';
+  });
+  h+='</div>';
+  // Anhänge
+  h+='<div class="bdSec"><div class="bdSecHead"><h4>Anhänge</h4><label class="bdBtn" style="cursor:pointer">+ Datei<input type="file" id="tFile" multiple style="display:none"></label></div>';
+  (c.attachments||[]).forEach(function(a){h+='<div class="bdFile">📎 '+(a.pending?'<span style="flex:1">'+esc(a.file_name)+' (noch nicht übernommen)</span>':'<a data-att="'+a.id+'">'+esc(a.file_name)+'</a>')+'<small style="color:var(--bd-muted)">'+bytesFmt(a.size)+'</small><button class="bdX" data-attdel="'+a.id+'">×</button></div>'});
+  if(!(c.attachments||[]).length)h+='<div class="bdLog">Keine Anhänge.</div>';
+  h+='</div>';
+  // Kommentare
+  var cms=(c.comments||[]).filter(function(x){return x.kind==='comment'}),logs=(c.comments||[]).filter(function(x){return x.kind==='log'});
+  h+='<div class="bdSec"><div class="bdSecHead"><h4>Kommentare</h4></div>';
+  cms.forEach(function(x){h+='<div class="bdCm"><small>'+esc(x.author_name||x.author||'')+' · '+fmtTs(x.created_at)+((x.author===me()||H().isAdmin)?' <button class="bdX" data-cmdel="'+x.id+'">×</button>':'')+'</small><p>'+esc(x.body)+'</p></div>'});
+  h+='<textarea id="cmNew" placeholder="Kommentar schreiben …" style="min-height:60px"></textarea><div style="text-align:right;margin-top:6px"><button class="bdBtn primary" id="cmAdd">Kommentar speichern</button></div></div>';
+  if(logs.length)h+='<details class="bdSec"><summary style="cursor:pointer;font-weight:800;color:var(--bd-blue)">Verlauf ('+logs.length+')</summary>'+logs.map(function(x){return'<div class="bdLog">'+fmtTs(x.created_at)+' · '+esc(x.author_name||x.author||'')+' · '+esc(x.body)+'</div>'}).join('')+'</details>';
+  h+='<div class="bdRow" style="justify-content:space-between;margin-top:20px"><button class="bdBtn danger" id="tDel">In den Papierkorb</button><span class="bdLog">Erstellt '+fmtTs(t.created_at)+(t.created_by?' von '+esc(t.created_by):'')+'</span></div>';
+  h+='</div></div>';
+  $('#bdModalHost').innerHTML=h;
+  var bg=$('.bdModalBg');if(bg)bg.scrollTop=scroll;
+}
+
+async function taskClick(e){
+  var c=S.cur,t=c.task,el=e.target;
+  var q=function(a){return el.closest('['+a+']')};
+  var x;
+  if(el.id==='tClose'||el.id==='bdTaskBg'){closeTask();return}
+  if((x=q('data-user'))){var u=x.dataset.user,a=(t.assignees||[]).slice(),i=a.indexOf(u);if(i>=0)a.splice(i,1);else a.push(u);if(await saveField({assignees:a}))drawTask();return}
+  if((x=q('data-deltag'))){if(await saveField({tags:(t.tags||[]).filter(function(g){return g!==x.dataset.deltag})}))drawTask();return}
+  if(el.id==='clAdd'){var n=await dlg({title:'Neue Checkliste',input:'',ok:'Anlegen'});if(n){var r=await call('board_checklist_add',{task_id:t.id,name:n});if(r.ok)reopen();else msg(r.message,true)}return}
+  if((x=q('data-clren'))){var cl=c.checklists.find(function(k){return k.id===x.dataset.clren});var nn=await dlg({title:'Checkliste umbenennen',input:cl.name,ok:'Speichern'});if(nn){var r2=await call('board_checklist_rename',{id:cl.id,name:nn});if(r2.ok)reopen();else msg(r2.message,true)}return}
+  if((x=q('data-cldel'))){if(await dlg({title:'Checkliste löschen?',text:'Die Checkliste mit allen Einträgen wird gelöscht.',ok:'Löschen',danger:true})){var r3=await call('board_checklist_delete',{id:x.dataset.cldel});if(r3.ok)reopen();else msg(r3.message,true)}return}
+  if((x=q('data-itdel'))){var r4=await call('board_item_delete',{id:x.dataset.itdel});if(r4.ok)reopen();else msg(r4.message,true);return}
+  if((x=q('data-itedit'))){
+    var id=x.dataset.itedit,it=null;c.checklists.forEach(function(k){k.items.forEach(function(z){if(z.id===id)it=z})});
+    var inp=document.createElement('input');inp.type='text';inp.value=it.name;x.replaceWith(inp);inp.focus();
+    var done=false,fin=async function(save){if(done)return;done=true;if(save&&inp.value.trim()&&inp.value.trim()!==it.name){var rr=await call('board_item_set',{id:id,name:inp.value.trim()});if(!rr.ok)msg(rr.message,true)}reopen()};
+    inp.addEventListener('blur',function(){fin(true)});inp.addEventListener('keydown',function(ev){if(ev.key==='Enter')fin(true);if(ev.key==='Escape')fin(false)});return;
+  }
+  if((x=q('data-att'))){var ru=await call('board_attachment_url',{id:x.dataset.att});if(ru.ok){if(H().openUrl)H().openUrl(ru.url);else window.open(ru.url,'_blank')}else msg(ru.message,true);return}
+  if((x=q('data-attdel'))){if(await dlg({title:'Anhang löschen?',ok:'Löschen',danger:true})){var r5=await call('board_attachment_delete',{id:x.dataset.attdel});if(r5.ok)reopen();else msg(r5.message,true)}return}
+  if((x=q('data-cmdel'))){var r6=await call('board_comment_delete',{id:x.dataset.cmdel});if(r6.ok)reopen();else msg(r6.message,true);return}
+  if(el.id==='cmAdd'){var tx=$('#cmNew').value.trim();if(!tx)return;var r7=await call('board_comment_add',{task_id:t.id,body:tx});if(r7.ok)reopen();else msg(r7.message,true);return}
+  if(el.id==='tDel'){if(await dlg({title:'In den Papierkorb?',text:'Die Aufgabe kann im Papierkorb wiederhergestellt werden.',ok:'In den Papierkorb',danger:true})){var r8=await call('board_task_delete',{id:t.id});if(r8.ok){S.tasks.delete(t.id);closeTask()}else msg(r8.message,true)}return}
+}
+function taskChange(e){
+  var t=S.cur&&S.cur.task,el=e.target;if(!t)return;
+  if(el.id==='tStatus')saveField({status:el.value}).then(function(ok){if(ok)reopen()});
+  else if(el.id==='tDue')saveField({due_date:el.value||null});
+  else if(el.id==='tPrio')saveField({priority:el.value||null});
+  else if(el.id==='tTitle'){var v=el.value.trim();if(v&&v!==t.title)saveField({title:v});else el.value=t.title}
+  else if(el.id==='tDesc'){if(el.value!==(t.description||''))saveField({description:el.value})}
+  else if(el.dataset&&el.dataset.itchk){call('board_item_set',{id:el.dataset.itchk,resolved:el.checked}).then(function(r){if(r.ok)reopen();else msg(r.message,true)})}
+  else if(el.id==='tFile'){uploadFiles(el.files)}
+}
+async function uploadFiles(files){
+  var t=S.cur.task;
+  for(var i=0;i<files.length;i++){
+    var f=files[i];if(f.size>10*1024*1024){msg(f.name+' ist größer als 10 MB.',true);continue}
+    var b64=await new Promise(function(res,rej){var fr=new FileReader();fr.onload=function(){res(String(fr.result).split(',')[1]||'')};fr.onerror=rej;fr.readAsDataURL(f)});
+    msg('Lade '+f.name+' hoch …');
+    var r=await call('board_attachment_add',{task_id:t.id,file_name:f.name,content_type:f.type,file_b64:b64});
+    if(!r.ok)msg(r.message||'Upload fehlgeschlagen.',true);
+  }
+  reopen();
+}
+function taskKey(e){
+  var el=e.target;if(!S.cur)return;
+  if(el.id==='tTag'&&e.key==='Enter'){e.preventDefault();var v=el.value.trim();if(v){var tags=(S.cur.task.tags||[]).slice();if(tags.indexOf(v)<0)tags.push(v);saveField({tags:tags}).then(function(ok){if(ok)drawTask()})}}
+  else if(el.classList&&el.classList.contains('bdItNew')&&e.key==='Enter'){e.preventDefault();var n=el.value.trim();if(n)call('board_item_add',{checklist_id:el.dataset.cl,name:n}).then(function(r){if(r.ok)reopen();else msg(r.message,true)})}
+  else if(e.key==='Escape')closeTask();
+}
+
+/* ---------- Neue Aufgabe / Papierkorb / Import ---------- */
+async function createTask(title,status){
+  var r=await call('board_task_save',{list_id:S.listId,title:title,status:status});
+  if(!r.ok){msg(r.message||'Anlegen fehlgeschlagen.',true);return}
+  S.tasks.set(r.task.id,r.task);render();
+}
+async function showTrash(){
+  var r=await call('board_trash_list');if(!r.ok){msg(r.message,true);return}
+  var host=$('#bdModalHost');S.modalOpen=true;
+  var h='<div class="bdModalBg" id="bdTrashBg"><div class="bdModal"><div class="bdRow"><h3 style="flex:1">Papierkorb</h3><button class="bdBtn" id="trClose">Schließen</button></div>';
+  if(!r.tasks.length)h+='<div class="bdLog">Der Papierkorb ist leer.</div>';
+  r.tasks.forEach(function(t){h+='<div class="bdFile"><span style="flex:1"><b>'+esc(shownTitle(t))+'</b><br><small style="color:var(--bd-muted)">gelöscht '+fmtTs(t.deleted_at)+'</small></span><button class="bdBtn" data-restore="'+t.id+'">Wiederherstellen</button></div>'});
+  host.innerHTML=h+'</div></div>';
+}
+async function runImport(){
+  var host=$('#bdModalHost');S.modalOpen=true;
+  var running=false,cancel=false;
+  var draw=function(body){host.innerHTML='<div class="bdModalBg"><div class="bdModal"><h3>Aufgaben aus ClickUp übernehmen</h3>'+body+'</div></div>'};
+  draw('<p>ClickUp wird nur gelesen, dort wird nichts verändert. Bereits übernommene Aufgaben werden übersprungen.</p><div class="bdRow" style="justify-content:flex-end"><button class="bdBtn" id="imClose">Abbrechen</button><button class="bdBtn primary" id="imScan">Prüfen</button></div>');
+  host.onclick=async function(e){
+    if(e.target.id==='imClose'){cancel=true;if(!running){host.onclick=null;host.innerHTML='';S.modalOpen=false;render()}return}
+    if(e.target.id==='imDone'){host.onclick=null;host.innerHTML='';S.modalOpen=false;await load(true);render();return}
+    if(e.target.id==='imScan'){
+      draw('<p>Lese ClickUp …</p>');
+      var sc=await call('board_import_scan');
+      if(!sc.ok){draw('<p style="color:#b91c1c">'+esc(sc.message||'Fehler')+'</p><div class="bdRow" style="justify-content:flex-end"><button class="bdBtn" id="imClose">Schließen</button></div>');return}
+      S.scan=sc.lists;
+      var open=0;sc.lists.forEach(function(l){open+=l.ids.length-l.imported});
+      draw('<p>Gefunden:</p><ul>'+sc.lists.map(function(l){return'<li><b>'+esc(l.name)+'</b>: '+l.ids.length+' Aufgaben, davon schon übernommen: '+l.imported+'</li>'}).join('')+'</ul><p>Noch zu übernehmen: <b>'+open+'</b>'+(open?' (dauert etwa '+Math.max(1,Math.round(open/8*10/60))+' Minuten)':'')+'</p><div class="bdRow" style="justify-content:flex-end"><button class="bdBtn" id="imClose">Abbrechen</button><button class="bdBtn primary" id="imGo">Übernehmen</button></div>');
+      return;
+    }
+    if(e.target.id==='imGo'){
+      running=true;cancel=false;
+      var tot=0,got=0,fails=[],logTxt='';
+      S.scan.forEach(function(l){tot+=l.ids.length});
+      var upd=function(txt){draw('<p>'+esc(txt)+'</p><div class="bdProg"><i style="width:'+(tot?Math.min(100,Math.round(got*100/tot)):0)+'%"></i></div><div class="bdLogBox">'+esc(logTxt)+'</div>')};
+      var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+      for(var li=0;li<S.scan.length&&!cancel;li++){
+        var L=S.scan[li];
+        // bereits übernommene Aufgaben werden serverseitig übersprungen
+        for(var i=0;i<L.ids.length&&!cancel;i+=8){
+          upd('Übernehme „'+L.name+'“ … '+got+' von '+tot);
+          var batch=L.ids.slice(i,i+8);
+          var r=await call('board_import_tasks',{list_id:L.list_id,ids:batch});
+          if(!r.ok){logTxt+='Fehler: '+(r.message||'unbekannt')+'\n';await sleep(8000);r=await call('board_import_tasks',{list_id:L.list_id,ids:batch});if(!r.ok){fails=fails.concat(batch);continue}}
+          got+=batch.length;(r.failed||[]).forEach(function(f){fails.push(f)});
+          if(r.imported)logTxt+=L.name+': '+r.imported+' übernommen\n';
+          if(r.imported)await sleep(5000);
+        }
       }
-    } else if(!futureRate||monthDate>=futureRate._monthDate){
-      futureRate={
-        _monthDate:monthDate, jahr:jahrAnzeige, stufe:rec.stufe,
-        pflegegeld:pg, pflegegeld_nach_umwandlung:0.6*pg, umwandlungsbetrag:0.4*psl, entlastungsleistung:entl,
-        gesamt_mit:zukunftMit, gesamt_ohne:zukunftOhne,
-        monat_betrag_mit:monatBetragMit, monat_betrag_ohne:monatBetragOhne,
-        monat_betrag:monatDelta
-      };
-    }
-  });
-
-  pastDetails.sort((a,b)=>(a.jahr-b.jahr)||(a.monat-b.monat));
-  const groupMap=new Map(); const groupOrder=[];
-  pastDetails.forEach(d=>{
-    const betragKey=Math.round(d.monat_betrag*100);
-    const key=d.jahr+'|'+betragKey;
-    let g=groupMap.get(key);
-    if(!g){ g={jahr:d.jahr, monate:0, betragProMonat:d.monat_betrag, summe:0}; groupMap.set(key,g); groupOrder.push(key); }
-    g.monate+=1; g.summe+=d.monat_betrag;
-  });
-  const pastGrouped=groupOrder.map(k=>groupMap.get(k));
-
-  return { futureRate, sumRueckwirkend, pastDetails, pastGrouped, cutoffYear:cutoff.getFullYear() };
-}
-
-function calcReferenceTable(){
-  const jahr=CALC_TABLE_MAX_YEAR;
-  const rows=[2,3,4,5].map(stufe=>{
-    const pg=PFLEGEGELD_TBL[jahr][stufe], psl=PSL_TBL[jahr][stufe], entl=ENTL_TBL[jahr];
-    const umwandlung=0.4*psl, pgNachUmwandlung=0.6*pg;
-    const gesamtZukuenftig=umwandlung+pgNachUmwandlung+entl;
-    const gesamtZukuenftigOhne=umwandlung+pgNachUmwandlung;
-    const mehrMoeglich=gesamtZukuenftig-pg;
-    const mehrMoeglichOhne=gesamtZukuenftigOhne-pg;
-    return {stufe, pg, psl, umwandlung, pgNachUmwandlung, entl, gesamtZukuenftig, gesamtZukuenftigOhne, mehrMoeglich, mehrMoeglichOhne};
-  });
-  const head='<tr><th></th>'+rows.map(r=>`<th class="num">PG ${r.stufe}</th>`).join('')+'</tr>';
-  const row=(label,key)=>'<tr><td>'+label+'</td>'+rows.map(r=>`<td class="num">${eur(r[key])}</td>`).join('')+'</tr>';
-  const blankRow=()=>'<tr><td colspan="'+(rows.length+1)+'">&nbsp;</td></tr>';
-  const totalRow=(label,key)=>'<tr class="calcTotalRow"><td>'+label+'</td>'+rows.map(r=>`<td class="num">${eur(r[key])}</td>`).join('')+'</tr>';
-  return '<div class="refTableWrap"><table class="calcTable">'+
-    '<thead>'+head+'</thead><tbody>'+
-    row('Pflegegeld','pg')+
-    row('Pflegesachleistung','psl')+
-    blankRow()+
-    row('Umwandlung (zweckgebunden)','umwandlung')+
-    row('Pflegegeld nach Umwandlung (frei verwendbar)','pgNachUmwandlung')+
-    row('Entlastungsleistung (zweckgebunden)','entl')+
-    totalRow('Gesamt Zukünftig','gesamtZukuenftig')+
-    row('Gesamt Zukünftig ohne Entlastung','gesamtZukuenftigOhne')+
-    blankRow()+
-    row('Monatlich mehr möglich für die Pflege','mehrMoeglich')+
-    row('Monatlich mehr möglich für die Pflege, ohne Entlastungsleistung','mehrMoeglichOhne')+
-    '</tbody></table></div>'+
-    `<p class="mini" style="font-size:11px;color:#889;margin-top:6px">Werte für ${jahr}, Referenzwerte pro Pflegegrad - unabhängig von den oben eingetragenen individuellen Zeiträumen.</p>`;
-}
-
-function buildNachweisHtml(c, rueckwirkend, showParagraphs){
-  const res=rechnePflegegrade(c.pflegegrade||[]);
-  let vpSum=0;
-  (Array.isArray(c.verhinderungspflege)?c.verhinderungspflege:[]).forEach(v=>{
-    if(v.genommen)return;
-    const raw=String(v.betrag||'').replace(',','.').trim();
-    vpSum+=raw?(Number(raw)||0):0;
-  });
-
-  let html=`<div class="calcHead"><div><h3>${esc(c.pflege_name||'—')}</h3><p class="mini">${esc(c.pflege_kasse||'')}</p></div></div>`;
-
-  if(res.futureRate){
-    const f=res.futureRate;
-    html+=`<div class="calcBox"><h4>Zukünftig</h4>`+
-      `<div class="calcRow"><span class="k">Pflegegeld (frei verfügbar)</span><span class="v">${eur(f.pflegegeld_nach_umwandlung)} / Monat</span></div>`+
-      `<div class="calcRow"><span class="k">Umwandlungsbetrag (zweckgebunden – anerkannte Angebote)</span><span class="v">${eur(f.umwandlungsbetrag)} / Monat</span></div>`+
-      `<div class="calcRow"><span class="k">Entlastungsleistung (zweckgebunden – anerkannte Angebote)</span><span class="v">${eur(f.entlastungsleistung)} / Monat</span></div>`+
-      `<div class="calcRow total"><span class="k">Gesamt monatlich</span><span class="v">${eur(f.gesamt_mit)} / Monat</span></div>`+
-      `<div class="calcRow"><span class="k">Monatlich mehr möglich für die Pflege (ggü. reinem Pflegegeld)</span><span class="v">${eur(f.monat_betrag_mit)} / Monat</span></div>`+
-      `<div class="calcRow"><span class="k">Monatlich mehr möglich für die Pflege, ohne Entlastungsleistung</span><span class="v">${eur(f.monat_betrag_ohne)} / Monat</span></div>`+
-      `</div>`;
-  } else {
-    html+=`<div class="calcBox"><p class="mini">Keine laufende Pflegegrad-Phase ab dem aktuellen Monat erfasst.</p></div>`;
-  }
-
-  if(rueckwirkend){
-    const gesamtRueckwirkend=res.sumRueckwirkend+vpSum;
-    html+=`<div class="calcBox"><h4>Rückwirkend</h4>`;
-    if(res.pastGrouped.length){
-      html+=`<div class="refTableWrap"><table class="calcTable"><thead><tr><th>Jahr</th><th class="num">Monate</th><th class="num">€ / Monat</th><th class="num">Jahressumme</th></tr></thead><tbody>`+
-        res.pastGrouped.map(g=>`<tr><td>${g.jahr}</td><td class="num">${g.monate}</td><td class="num">${eur(g.betragProMonat)}</td><td class="num">${eur(g.summe)}</td></tr>`).join('')+
-        `</tbody></table></div>`;
-    } else {
-      html+=`<p class="mini">Keine rückwirkend anrechenbaren Monate erfasst.</p>`;
-    }
-    html+=`<div style="margin-top:6px">`+
-      `<div class="calcRow"><span class="k">Summe</span><span class="v">${eur(res.sumRueckwirkend)}</span></div>`+
-      (vpSum?`<div class="calcRow"><span class="k">+ Verhinderungspflege-Restbeträge</span><span class="v">${eur(vpSum)}</span></div>`:'')+
-      `<div class="calcRow total"><span class="k">Gesamt rückwirkend</span><span class="v">${eur(gesamtRueckwirkend)}</span></div>`+
-      `</div></div>`;
-  }
-
-  html+=`<div class="calcBox"><h4>Referenztabelle nach Pflegegrad</h4>${calcReferenceTable()}</div>`;
-
-  if(showParagraphs){
-    html+=`<div class="calcBox calcLegal"><h4>Rechtsgrundlagen</h4>`+
-      `<p><b>Umwandlungsanspruch (§ 45a SGB XI)</b><br>Bis zu 40 % des monatlichen Pflegesachleistungsbudgets können in einen Umwandlungsbetrag für anerkannte Angebote zur Unterstützung im Alltag (z. B. Nachbarschaftshilfe) umgewandelt werden. Dadurch reduziert sich das Pflegegeld anteilig auf 60 % des vollen Satzes.</p>`+
-      `<p style="margin-top:10px"><b>Entlastungsbetrag (§ 45b SGB XI)</b><br>Zusätzlich und unabhängig davon steht Pflegebedürftigen in häuslicher Pflege ein Entlastungsbetrag von bis zu 131 € monatlich zu, ebenfalls zweckgebunden für anerkannte Angebote zur Unterstützung im Alltag.</p>`+
-      `<p style="margin-top:10px"><b>Zweckbindung</b><br>Das (reduzierte) Pflegegeld ist frei verfügbar und ohne Verwendungsnachweis nutzbar. Umwandlungsbetrag und Entlastungsbetrag sind dagegen zweckgebunden und werden nur gegen Nachweis bei anerkannten Angeboten erstattet.</p>`+
-      `<p style="margin-top:10px"><b>Rückwirkende Beantragung (§ 45 SGB I)</b><br>Ansprüche auf Sozialleistungen verjähren vier Jahre nach Ablauf des Kalenderjahres, in dem sie entstanden sind – eine rückwirkende Beantragung ist daher regelmäßig für die letzten vier Kalenderjahre möglich.</p></div>`;
-  }
-
-  return html;
-}
-
-async function callFn(name, body){
-  try{
-    const r = await fetch(`${FN_BASE}/${name}`, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+ANON_KEY, 'apikey':ANON_KEY },
-      body: JSON.stringify(body||{}),
-    });
-    return await r.json();
-  }catch(e){
-    return { ok:false, message: 'Netzwerkfehler: '+e };
-  }
-}
-
-let session = null; // {token, user}
-let customers = [];
-let currentCustomer = null;
-let lastBerechnung = null; // {html, title} - fuer den Drucken-Button
-
-// Anmeldung gilt tab-übergreifend (localStorage), damit Beratung/Fernaufnahme im selben Browser ohne neuen Code gehen.
-// Automatische Abmeldung nach 30 Minuten ohne Aktivität.
-const SESSION_KEY = 'curafact_portal_session', IDLE_MS = 30 * 60 * 1000;
-function saveSession(s){ session = s; s.last = Date.now(); try{ localStorage.setItem(SESSION_KEY, JSON.stringify(s)); }catch(e){} }
-function loadSession(){ try{ const raw = localStorage.getItem(SESSION_KEY); if(raw){ const s = JSON.parse(raw); if(s && Date.now() - (s.last||0) < IDLE_MS) session = s; else localStorage.removeItem(SESSION_KEY); } }catch(e){} }
-function clearSession(){ session = null; try{ localStorage.removeItem(SESSION_KEY); }catch(e){} }
-let _lastTouch = 0;
-function touchSession(){ const n = Date.now(); if(!session || n - _lastTouch < 10000) return; _lastTouch = n; session.last = n; try{ localStorage.setItem(SESSION_KEY, JSON.stringify(session)); }catch(e){} }
-['click','keydown','touchstart','mousemove'].forEach(ev => document.addEventListener(ev, touchSession, {passive:true}));
-setInterval(() => {
-  try{
-    const raw = localStorage.getItem(SESSION_KEY);
-    const s = raw ? JSON.parse(raw) : null;
-    if(!s || Date.now() - (s.last||0) >= IDLE_MS){ if(session){ doLogout(); alert('Aus Sicherheitsgründen wurdest du nach 30 Minuten Inaktivität abgemeldet.'); } }
-    else if(session){ session.last = s.last; }
-  }catch(e){}
-}, 30000);
-
-async function doLogin(){
-  const user = document.getElementById('loginUser').value.trim();
-  const code = document.getElementById('loginCode').value.trim();
-  const errEl = document.getElementById('loginErr');
-  errEl.textContent = '';
-  if(!user || !code){ errEl.textContent = 'Bitte Name und Code eingeben.'; return; }
-  const btn = document.getElementById('loginBtn');
-  btn.disabled = true; btn.textContent = 'Prüfe …';
-  const r = await callFn('portal-login', { username:user, code });
-  btn.disabled = false; btn.textContent = 'Anmelden';
-  if(!r.ok){ errEl.textContent = r.message || 'Anmeldung fehlgeschlagen.'; return; }
-  saveSession({ token:r.token, expires_at:r.expires_at, user:r.user });
-  showApp();
-}
-
-function doLogout(){
-  clearSession();
-  document.getElementById('appBox').classList.add('hidden');
-  document.getElementById('loginBox').classList.remove('hidden');
-  document.getElementById('loginCode').value = '';
-}
-
-async function showApp(){
-  document.getElementById('loginBox').classList.add('hidden');
-  document.getElementById('appBox').classList.remove('hidden');
-  document.getElementById('whoName').textContent = session.user.display_name || session.user.username;
-  await loadCustomers();
-}
-
-async function loadCustomers(){
-  const r = await callFn('portal-data', { token: session.token, action: 'list_customers' });
-  if(!r.ok){
-    if(String(r.message||'').includes('Sitzung')){ doLogout(); return; }
-    document.getElementById('custList').innerHTML = `<div class="empty">${esc(r.message||'Fehler beim Laden.')}</div>`;
-    return;
-  }
-  customers = r.customers || [];
-  renderCustList();
-}
-
-function renderCustList(){
-  const q = document.getElementById('custSearch').value.trim().toLowerCase();
-  const filtered = customers.filter(c => !q || (c.name||'').toLowerCase().includes(q));
-  if(!filtered.length){ document.getElementById('custList').innerHTML = '<div class="empty">Keine Kunden gefunden.</div>'; return; }
-  document.getElementById('custList').innerHTML = filtered.map(c => `
-    <div class="custItem ${currentCustomer===c.name?'sel':''}" data-name="${esc(c.name)}" data-file="${esc(c.file||'')}">
-      <strong>${esc(c.name)}</strong>
-      <span>${esc(c.kasse||'—')}${c.pflegegrad?' · '+esc(c.pflegegrad):''}</span>
-    </div>`).join('');
-  document.querySelectorAll('.custItem').forEach(el => {
-    el.onclick = () => openCustomer(el.dataset.name, el.dataset.file);
-  });
-}
-
-async function openCustomer(name, file){
-  currentCustomer = name;
-  renderCustList();
-  document.getElementById('detailBox').innerHTML = '<div class="box"><p class="empty">Lade …</p></div>';
-  const r = await callFn('portal-data', { token: session.token, action: 'get_customer', name, file });
-  if(!r.ok){
-    document.getElementById('detailBox').innerHTML = `<div class="box"><p class="empty">${esc(r.message||'Kunde konnte nicht geladen werden.')}</p></div>`;
-    return;
-  }
-  renderDetail(r.customer);
-  loadNotes(name);
-}
-
-function renderDetail(c){
-  const calc = c._last_calculation;
-
-  let html = `<div class="box">
-    <h2>Stammdaten</h2>
-    <div class="detailGrid">
-      <div class="field"><div class="k">Name</div><div class="v">${esc(c.pflege_name||'—')}</div></div>
-      <div class="field"><div class="k">Kasse</div><div class="v">${esc(c.pflege_kasse||'—')}</div></div>
-      <div class="field"><div class="k">Anschrift</div><div class="v">${esc(c.pflege_anschrift||'—')}</div></div>
-      <div class="field"><div class="k">Vers.-Nr.</div><div class="v">${esc(c.pflege_kvnr||'—')}</div></div>
-      <div class="field"><div class="k">Geburtsdatum</div><div class="v">${esc(c.pflege_geburtsdatum||'—')}</div></div>
-      <div class="field"><div class="k">Pflegeberatung</div><div class="v">${c.pflegeberatung_kunde?'Ja':'Nein'}</div></div>
-    </div>`;
-
-  html += `</div>`;
-
-  if(Array.isArray(c.pflegegrade) && c.pflegegrade.length){
-    html += `<div class="box"><h2>Pflegegrade</h2><div class="calcTableWrap"><table class="calcTable"><thead><tr><th>Stufe</th><th>Seit</th><th>Bis</th><th>Fortlaufend</th><th>Entlastung genommen</th></tr></thead><tbody>${c.pflegegrade.map(p=>`<tr><td>${esc(p.stufe?'PG'+p.stufe:'—')}</td><td>${esc(p.von||'—')}</td><td>${esc(p.bis||'—')}</td><td>${p.fortlaufend?'Ja':'Nein'}</td><td>${p.entlastung_genommen?'Ja':'Nein'}</td></tr>`).join('')}</tbody></table></div></div>`;
-  }
-
-  if(Array.isArray(c.verhinderungspflege) && c.verhinderungspflege.length){
-    html += `<div class="box"><h2>Verhinderungspflege</h2><div class="calcTableWrap"><table class="calcTable"><thead><tr><th>Jahr</th><th>Genommen</th><th>Betrag / Rest</th><th>Von</th><th>Bis</th></tr></thead><tbody>${c.verhinderungspflege.map(v=>`<tr><td>${esc(v.jahr||'—')}</td><td>${v.genommen?'Ja':'Nein'}</td><td>${esc(v.betrag||'—')}</td><td>${esc(v.start||'—')}</td><td>${esc(v.ende||'—')}</td></tr>`).join('')}</tbody></table></div></div>`;
-  }
-
-  html += `<div class="box">
-    <h2>Fernaufnahme – Änderungen</h2>
-    <p class="mini">Link/QR für ${esc(c.pflege_name||'diesen Kunden')} - Angaben werden in der Desktop-App diesem Kunden zugeordnet, nicht als neuer Kunde angelegt.</p>
-    <div class="row" style="margin-top:8px">
-      <button id="faEditIntakeBtn">Abrechnung</button>
-      <button id="faEditBeratungBtn">Beratung</button>
-    </div>
-  </div>`;
-
-  if(c.person_name || c.person_anschrift || c.person_geburtsdatum){
-    html += `<div class="box">
-      <h2>Bevollmächtigte Person / Ansprechpartner</h2>
-      <div class="detailGrid">
-        <div class="field"><div class="k">Name</div><div class="v">${esc(c.person_name||'—')}</div></div>
-        <div class="field"><div class="k">Anschrift</div><div class="v">${esc(c.person_anschrift||'—')}</div></div>
-        <div class="field"><div class="k">Geburtsdatum</div><div class="v">${esc(c.person_geburtsdatum||'—')}</div></div>
-      </div>
-    </div>`;
-  }
-
-  const helperNums = [];
-  if(c.hilfe_name || c.hilfe_anschrift || c.hilfe_geburtsdatum) helperNums.push(1);
-  Object.keys(c||{}).forEach(k => { const m = k.match(/^hilfe(\d+)_/); if(m && !helperNums.includes(Number(m[1]))) helperNums.push(Number(m[1])); });
-  helperNums.sort((a,b)=>a-b);
-  helperNums.forEach(n => {
-    const prefix = n===1 ? 'hilfe' : `hilfe${n}`;
-    const name = c[prefix+'_name'], anschrift = c[prefix+'_anschrift'], geb = c[prefix+'_geburtsdatum'];
-    if(!name && !anschrift && !geb) return;
-    html += `<div class="box">
-      <h2>${n===1?'Nachbarschaftshilfe':n+'. Nachbarschaftshilfe'}</h2>
-      <div class="detailGrid">
-        <div class="field"><div class="k">Name</div><div class="v">${esc(name||'—')}</div></div>
-        <div class="field"><div class="k">Anschrift</div><div class="v">${esc(anschrift||'—')}</div></div>
-        <div class="field"><div class="k">Geburtsdatum</div><div class="v">${esc(geb||'—')}</div></div>
-      </div>
-    </div>`;
-  });
-
-  html += `<div class="box">
-    <h2>Berechnung / Nachweis</h2>
-    <p class="mini">Zukünftig laufend möglich sowie - falls gewünscht - rückwirkend beantragbar, basierend auf den aktuell gespeicherten Pflegegrad-Phasen.</p>
-    <div class="row" style="margin-top:8px;align-items:center;gap:16px">
-      <label style="display:flex;align-items:center;gap:6px;font-weight:400;margin:0"><input type="checkbox" id="nachweisRueckwirkend" style="width:auto"> Rückwirkend beantragen</label>
-      <label style="display:flex;align-items:center;gap:6px;font-weight:400;margin:0"><input type="checkbox" id="nachweisParagraphen" checked style="width:auto"> Rechtsgrundlagen (§) anzeigen</label>
-    </div>
-    <div class="row" style="margin-top:10px">
-      <button class="primary" id="nachweisShowBtn">Berechnung anzeigen</button>
-      <button id="nachweisPrintBtn" style="display:none">Nachweis drucken</button>
-    </div>
-    <div id="nachweisResult" style="margin-top:10px"></div>
-  </div>`;
-
-  if(calc && calc.result){
-    const res = calc.result;
-    lastBerechnung = { html: buildBerechnungHtml(res, calc.at), title: 'Berechnung – ' + (res.kunde && res.kunde.name || c.pflege_name || '') };
-    html += `<div class="box"><h2>Letzte Berechnung</h2>
-      <p class="mini">Stand: ${esc(calc.at||'')} — aus der Desktop-App, das Portal rechnet nicht selbst neu.</p>
-      ${lastBerechnung.html}
-      <button class="primary" id="printCalcBtn" style="margin-top:10px">Berechnung drucken</button>
-    </div>`;
-  } else {
-    lastBerechnung = null;
-  }
-
-  html += `<div class="box"><h2>Board</h2>
-    <p class="mini">Verlauf direkt hier, oder die Aufgabe im Board öffnen (Status, Checklisten, Anhänge).</p>
-    <div class="row" id="clickupLinks" style="margin-top:6px"><span class="empty">Lade …</span></div>
-    <div id="clickupActivity" style="margin-top:10px"></div>
-  </div>`;
-
-  html += `<div class="box"><h2>Notizen</h2>
-    <p class="mini">Wird zusätzlich als Kommentar an die passende Board-Aufgabe gehängt.</p>
-    <div id="notesList"><div class="empty">Lade …</div></div>
-    <label style="margin-top:10px">Neue Notiz</label>
-    <div class="row">
-      ${c.pflegeberatung_kunde ? `<select id="noteKontext" style="max-width:160px">
-        <option value="abrechnung" selected>Betrifft: Abrechnung</option>
-        <option value="beratung">Betrifft: Beratung</option>
-        <option value="beides">Betrifft: Beides</option>
-      </select>` : ''}
-    </div>
-    <textarea id="noteText" placeholder="z.B. Kunde bittet um Rückruf wegen ..." style="margin-top:6px"></textarea>
-    <button class="primary" id="noteBtn" style="margin-top:8px">Notiz speichern</button>
-  </div>`;
-
-  document.getElementById('detailBox').innerHTML = html;
-
-  if(lastBerechnung){
-    document.getElementById('printCalcBtn').onclick = () => printBerechnung(lastBerechnung.html, lastBerechnung.title);
-  }
-
-  let lastNachweis = null;
-  document.getElementById('nachweisShowBtn').onclick = () => {
-    const rueckwirkend = document.getElementById('nachweisRueckwirkend').checked;
-    const showParagraphs = document.getElementById('nachweisParagraphen').checked;
-    const nHtml = buildNachweisHtml(c, rueckwirkend, showParagraphs);
-    document.getElementById('nachweisResult').innerHTML = nHtml;
-    lastNachweis = { html: nHtml, title: 'Nachweis Pflegeleistungen – ' + (c.pflege_name || '') };
-    document.getElementById('nachweisPrintBtn').style.display = '';
-  };
-  document.getElementById('nachweisPrintBtn').onclick = () => {
-    if(lastNachweis) printBerechnung(lastNachweis.html, lastNachweis.title);
-  };
-
-  document.getElementById('faEditIntakeBtn').onclick = () => startFernaufnahme('start_intake', c.pflege_name, c);
-  document.getElementById('faEditBeratungBtn').onclick = () => startFernaufnahme('start_beratung', c.pflege_name, c);
-
-  loadClickupLinks(c.pflege_name, !!c.pflegeberatung_kunde);
-
-  document.getElementById('noteBtn').onclick = async () => {
-    const text = document.getElementById('noteText').value.trim();
-    if(!text) return;
-    const kontextEl = document.getElementById('noteKontext');
-    const kontext = kontextEl ? kontextEl.value : 'abrechnung';
-    const btn = document.getElementById('noteBtn');
-    btn.disabled = true;
-    const r = await callFn('portal-data', { token: session.token, action:'add_note', customer_name: c.pflege_name, text, kontext });
-    btn.disabled = false;
-    if(r.ok){ document.getElementById('noteText').value = ''; loadNotes(c.pflege_name); }
-  };
-}
-
-function fmtEuro(v){ return (Number(v)||0).toFixed(2).replace('.', ','); }
-
-function buildBerechnungHtml(res, atStr){
-  const k = res.kunde || {};
-  const vpRows = (res.vpRows||[]).map(x => `<tr><td>${esc(x.jahr)}</td><td>${esc(x.start||'')}</td><td>${esc(x.ende||'')}</td><td class="num">${fmtEuro(x.betrag)} €</td></tr>`).join('')
-    || '<tr><td colspan="4" class="mini">Keine Verhinderungspflege eingetragen.</td></tr>';
-  const pgRows = (res.details||[]).map(d => `<tr><td>PG ${esc(d.stufe)}</td><td>${esc(d.jahr)}</td><td class="num">${esc(d.monate)}</td><td class="num">${fmtEuro(d.pflegegeld_100)} €</td><td class="num">${fmtEuro(d.zukunftsbetrag_mit_entlastung)} €</td><td class="num">${fmtEuro(d.zukunftsbetrag_ohne_entlastung)} €</td><td class="num">${fmtEuro(d.monat_betrag)} €</td><td class="num">${fmtEuro(d.gesamt)} €</td></tr>`).join('')
-    || '<tr><td colspan="8" class="mini">Keine anrechenbaren Pflegegrad-Phasen.</td></tr>';
-  return `
-    <div class="calcHead">
-      <div><h3>Auswertung – ${esc(k.name||'')}</h3><p class="mini">${esc(k.anschrift||'')}</p><p class="mini">${esc(k.kasse||'')}${k.kvnr?' · KVNR: '+esc(k.kvnr):''}</p></div>
-      <div class="mini">Stand: ${esc(atStr||'')}</div>
-    </div>
-    <div class="calcBox">
-      <h4>Verhinderungspflege / Kurzzeitpflege (Restbeträge)</h4>
-      <div class="calcTableWrap"><table class="calcTable"><thead><tr><th>Jahr</th><th>Von</th><th>Bis</th><th class="num">Restbetrag</th></tr></thead>
-      <tbody>${vpRows}</tbody>
-      <tfoot><tr><td colspan="3" class="num"><b>Summe</b></td><td class="num"><b>${fmtEuro(res.sumVP)} €</b></td></tr></tfoot></table></div>
-    </div>
-    <div class="calcBox">
-      <h4>Pflegegrade – Detaillierte Berechnung</h4>
-      <div class="calcTableWrap"><table class="calcTable"><thead><tr><th>PG</th><th>Jahr</th><th class="num">Monate</th><th class="num">Aktuelles PG (100%)</th><th class="num">Zukunftsbetrag (mit)</th><th class="num">Zukunftsbetrag (ohne)</th><th class="num">Monatlich rückw.</th><th class="num">Gesamt rückw.</th></tr></thead>
-      <tbody>${pgRows}</tbody>
-      <tfoot><tr><td colspan="7" class="num"><b>Summe Rückwirkend</b></td><td class="num"><b>${fmtEuro(res.sumPG)} €</b></td></tr></tfoot></table></div>
-    </div>
-    <div class="calcBox">
-      <table class="calcTable">
-        <tbody>
-          <tr><td>Gesamt Rückwirkend</td><td class="num"><b>${fmtEuro(res.sumPG)} €</b></td></tr>
-          <tr><td>+ Verhinderungspflege</td><td class="num"><b>${fmtEuro(res.sumVP)} €</b></td></tr>
-          <tr class="brutto"><td><b>= Bruttogesamt</b></td><td class="num"><b>${fmtEuro(res.brutto)} €</b></td></tr>
-          <tr class="abzug"><td><b>Abzug (${fmtEuro(res.abzugPct)} %)</b></td><td class="num"><b>− ${fmtEuro(res.abzug)} €</b></td></tr>
-          <tr class="netto"><td><b>Nettogesamt</b></td><td class="num"><b>${fmtEuro(res.netto)} €</b></td></tr>
-        </tbody>
-      </table>
-    </div>`;
-}
-
-function printBerechnung(html, title){
-  // Druckt ueber ein verstecktes iframe in derselben Seite statt window.open() -
-  // so gibt es kein Risiko, dass Safaris Popup-Blocker den Druckdialog verhindert.
-  let iframe = document.getElementById('print_iframe');
-  if(!iframe){
-    iframe = document.createElement('iframe');
-    iframe.id = 'print_iframe';
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    iframe.style.visibility = 'hidden';
-    document.body.appendChild(iframe);
-  }
-  const w = iframe.contentWindow;
-  const styles = `<style>
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#16324f;margin:0}
-    .page{padding:18px}
-    .calcHead{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:10px}
-    .calcHead h3{margin:0 0 4px;color:#0E4A8B}
-    .calcHead p{margin:2px 0;color:#66788a}
-    .mini{font-size:12px;color:#66788a}
-    .calcBox{border:1px solid #dbe7f0;border-radius:10px;padding:12px;margin:10px 0}
-    .calcBox h4{margin:0 0 8px;color:#0E4A8B;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
-    .calcTable{width:100%;border-collapse:collapse;font-size:11.5px}
-    .calcTable th,.calcTable td{padding:5px 6px;border-bottom:1px solid #dbe7f0;text-align:left;vertical-align:top}
-    .calcTable .num{text-align:right}
-    .calcTable tr.brutto{background:#fef3c7}
-    .calcTable tr.abzug{background:#fee2e2}
-    .calcTable tr.netto{background:#dcfce7}
-    .calcTable td[colspan]{border-bottom:0;padding:3px 0}
-    .calcRow{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:2px 12px;padding:5px 0;border-bottom:1px solid #dbe7f0;font-size:11.5px}
-    .calcRow:last-child{border-bottom:0}
-    .calcRow .k{color:#16324f;flex:1 1 auto;min-width:0}
-    .calcRow .v{font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;flex:none}
-    .calcRow.total{font-weight:700;color:#0E4A8B;border-top:2px solid #dbe7f0;border-bottom:0;margin-top:2px;padding-top:7px}
-    .calcTotalRow td{font-weight:700;color:#0E4A8B;border-top:2px solid #dbe7f0;border-bottom:0}
-    .refTableWrap{overflow-x:auto}
-    .calcLegal p{font-size:11px;color:#66788a}
-    @media print{.page{padding:0}.calcBox{break-inside:avoid}@page{size:A4 portrait;margin:10mm}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-  </style>`;
-  w.document.open();
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title||'Berechnung')}</title>${styles}</head><body><div class="page">${html}</div></body></html>`);
-  w.document.close();
-  w.focus();
-  setTimeout(() => w.print(), 150);
-}
-
-async function loadClickupLinks(name, pflegeberatung){
-  const el = document.getElementById('clickupLinks');
-  const activityEl = document.getElementById('clickupActivity');
-  if(!el) return;
-  const r = await callFn('portal-data', { token: session.token, action:'get_clickup_links', name, pflegeberatung: !!pflegeberatung });
-  if(!r.ok){
-    el.innerHTML = `<span class="empty">${esc(r.message||'Board-Verknüpfung konnte nicht geladen werden.')}</span>`;
-    if(activityEl) activityEl.innerHTML = '';
-    return;
-  }
-  const links = [];
-  if(r.pflegekunden_url) links.push(`<a href="${esc(r.pflegekunden_url)}" target="_blank" rel="noopener"><button>Pflegekunden-Aufgabe öffnen ↗</button></a>`);
-  if(r.pflegeberatung_url) links.push(`<a href="${esc(r.pflegeberatung_url)}" target="_blank" rel="noopener"><button>Pflegeberatungs-Aufgabe öffnen ↗</button></a>`);
-  el.innerHTML = links.length ? links.join('') : '<span class="empty">Noch keine Board-Aufgabe für diesen Kunden gefunden.</span>';
-  if(activityEl){
-    const activity = (r.activity || []).slice().reverse();
-    activityEl.innerHTML = activity.length
-      ? activity.map(a => `<div class="activityItem"><span class="badge">${esc(a.checklist)}</span> ${esc(a.text)}</div>`).join('')
-      : '<div class="empty">Noch keine Aktivität erfasst.</div>';
-  }
-}
-
-const NOTE_KONTEXT_LABEL = { abrechnung: 'Abrechnung', beratung: 'Beratung', beides: 'Beides' };
-async function loadNotes(name){
-  const r = await callFn('portal-data', { token: session.token, action:'list_notes', customer_name: name });
-  const el = document.getElementById('notesList');
-  if(!el) return;
-  if(!r.ok){ el.innerHTML = `<div class="empty">${esc(r.message||'Notizen konnten nicht geladen werden.')}</div>`; return; }
-  const notes = r.notes || [];
-  el.innerHTML = notes.length ? notes.map(n => `
-    <div class="noteItem">
-      <div class="meta">${esc(n.display_name||n.username||'')} · ${esc((n.created_at||'').replace('T',' ').slice(0,16))}${n.kontext ? ` · <span class="badge">${esc(NOTE_KONTEXT_LABEL[n.kontext]||n.kontext)}</span>` : ''}</div>
-      <div>${esc(n.text)}</div>
-    </div>`).join('') : '<div class="empty">Noch keine Notizen.</div>';
-}
-
-function deToIso(v){
-  const m = String(v||'').trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-  return m ? (m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')) : '';
-}
-function extractHelpersFromFlat(src, dateConv){
-  const numbers = new Set();
-  if(src.hilfe_name || src.hilfe_anschrift || src.hilfe_geburtsdatum || src.hilfe_sig_dataurl) numbers.add(1);
-  Object.keys(src||{}).forEach(k => { const m = k.match(/^hilfe(\d+)_/); if(m) numbers.add(Number(m[1])); });
-  return [...numbers].sort((a,b)=>a-b).map(n => {
-    const p = n===1 ? 'hilfe' : 'hilfe'+n;
-    return {
-      name: src[p+'_name'] || '',
-      anschrift: src[p+'_anschrift'] || '',
-      geburtsdatum: dateConv(src[p+'_geburtsdatum']),
-      sig_dataurl: src[p+'_sig_dataurl'] || '',
-    };
-  });
-}
-function buildIntakePrefillPayload(c){
-  return {
-    pflege_name: c.pflege_name || '',
-    pflege_anschrift: c.pflege_anschrift || '',
-    pflege_geburtsdatum: deToIso(c.pflege_geburtsdatum),
-    pflege_kvnr: c.pflege_kvnr || '',
-    pflege_kasse: c.pflege_kasse || '',
-    pflege_sig_dataurl: c.pflege_sig_dataurl || '',
-    pflegeberatung_kunde: !!c.pflegeberatung_kunde,
-    person_name: c.person_name || '',
-    person_anschrift: c.person_anschrift || '',
-    person_geburtsdatum: deToIso(c.person_geburtsdatum),
-    pflegegrade: (Array.isArray(c.pflegegrade) ? c.pflegegrade : []).map(p => ({
-      stufe: p.stufe, von: deToIso(p.von), bis: deToIso(p.bis),
-      fortlaufend: !!p.fortlaufend, entlastung_genommen: !!p.entlastung_genommen,
-      umwandlung_genommen: !!p.umwandlung_genommen,
-    })),
-    verhinderungspflege: Array.isArray(c.verhinderungspflege) ? c.verhinderungspflege : [],
-    nachbarschaftshilfen: extractHelpersFromFlat(c, deToIso),
-  };
-}
-
-let faQr = null;
-async function startFernaufnahme(action, label, customer){
-  const body = { token: session.token, action, label: label || '' };
-  if(customer) body.customer = buildIntakePrefillPayload(customer);
-  const r = await callFn('portal-data', body);
-  if(!r.ok){ alert(r.message || 'Fernaufnahme konnte nicht gestartet werden.'); return; }
-  const base = location.origin + location.pathname.replace(/[^/]*$/, '');
-  const url = base + r.page + '?s=' + encodeURIComponent(r.session) + (r.key ? '&k=' + encodeURIComponent(r.key) : '') + '&l=' + encodeURIComponent(r.label || '');
-  document.getElementById('faModalLabel').textContent = label ? ('Für: ' + label + ' (Änderungen - wird in der Desktop-App dem bestehenden Kunden zugeordnet)') : 'Neuer Kunde';
-  document.getElementById('faUrl').textContent = url;
-  const qrBox = document.getElementById('faQrBox');
-  qrBox.innerHTML = '';
-  if(window.QRCode){ faQr = new QRCode(qrBox, { text: url, width: 190, height: 190 }); }
-  document.getElementById('faOpenBtn').onclick = () => window.open(url, '_blank', 'noopener');
-  document.getElementById('faShareBtn').onclick = () => {
-    if(navigator.share){
-      navigator.share({ title: 'CuraFact Fernaufnahme', text: label ? ('Fernaufnahme für ' + label) : 'Fernaufnahme', url }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(url).then(() => { document.getElementById('faShareBtn').textContent = 'Kopiert ✓'; setTimeout(() => document.getElementById('faShareBtn').textContent = 'Teilen', 1500); });
+      if(!cancel){
+        var st=await call('board_import_stats');
+        if(st.ok&&st.pending){
+          logTxt+='Anhänge: '+st.pending+' ('+bytesFmt(st.pending_bytes)+')\n';
+          var guard=0;
+          while(!cancel&&guard++<400){upd('Übernehme Anhänge …');var fr=await call('board_import_files');if(!fr.ok){logTxt+=(fr.message||'Fehler bei Anhängen')+'\n';break}(fr.failed||[]).forEach(function(f){logTxt+='Anhang nicht übernommen: '+f+'\n'});if(!fr.remaining||fr.done===0&&!(fr.failed||[]).length)break}
+        }
+        var fin=await call('board_import_finish');
+        if(fin.ok&&fin.marked)logTxt+='Mögliche Duplikate markiert: '+fin.marked+'\n';
+      }
+      running=false;
+      draw('<p><b>'+(cancel?'Abgebrochen.':'Fertig.')+'</b> '+got+' von '+tot+' Aufgaben verarbeitet.'+(fails.length?' Fehlgeschlagen: '+fails.length+' (Import einfach erneut starten).':'')+'</p><div class="bdLogBox">'+esc(logTxt)+'</div><div class="bdRow" style="justify-content:flex-end;margin-top:12px"><button class="bdBtn primary" id="imDone">Schließen</button></div>');
+      return;
     }
   };
-  document.getElementById('faCopyBtn').onclick = () => {
-    navigator.clipboard.writeText(url).then(() => { document.getElementById('faCopyBtn').textContent = 'Kopiert ✓'; setTimeout(() => document.getElementById('faCopyBtn').textContent = 'Link kopieren', 1500); });
+}
+
+/* ---------- Duplikate zusammenführen (nur Admin) ---------- */
+async function runDupes(){
+  var host=$('#bdModalHost');S.modalOpen=true;
+  var draw=function(body){host.innerHTML='<div class="bdModalBg"><div class="bdModal small"><h3>Duplikate zusammenführen</h3>'+body+'</div></div>'};
+  var close=async function(reload){host.onclick=null;host.innerHTML='';S.modalOpen=false;if(reload)await load(true);render()};
+  draw('<p>Prüfe …</p>');
+  var r=await call('board_dupes_merge',{dry:true});
+  if(!r.ok){draw('<p style="color:#b91c1c">'+esc(r.message||'Fehler')+'</p><div class="bdRow" style="justify-content:flex-end"><button class="bdBtn" id="dpClose">Schließen</button></div>');host.onclick=function(e){if(e.target.id==='dpClose')close(false)};return}
+  if(!r.duplicates){draw('<p>Keine doppelten Aufgaben gefunden.</p><div class="bdRow" style="justify-content:flex-end"><button class="bdBtn" id="dpClose">Schließen</button></div>');host.onclick=function(e){if(e.target.id==='dpClose')close(false)};return}
+  draw('<p><b>'+r.duplicates+'</b> doppelte Aufgaben in <b>'+r.groups+'</b> Gruppen (gleicher Kundenname).</p><p class="bdLog">Beispiele: '+esc((r.examples||[]).join(', '))+'</p><p>Die älteste Aufgabe bleibt. Checklisten-Einträge, Kommentare und Anhänge der anderen wandern dorthin, die Dublette landet im Papierkorb (wiederherstellbar). Als Status gilt der der zuletzt bearbeiteten Aufgabe.</p><div class="bdRow" style="justify-content:flex-end"><button class="bdBtn" id="dpClose">Abbrechen</button><button class="bdBtn primary" id="dpGo">Zusammenführen</button></div>');
+  var running=false;
+  host.onclick=async function(e){
+    if(e.target.id==='dpClose'&&!running){close(false);return}
+    if(e.target.id==='dpDone'){close(true);return}
+    if(e.target.id==='dpGo'){
+      running=true;var done=0,guard=0,total=r.groups;
+      while(guard++<200){
+        draw('<p>Führe zusammen … '+done+' von '+total+' Gruppen</p><div class="bdProg"><i style="width:'+Math.round(done*100/Math.max(1,total))+'%"></i></div>');
+        var m=await call('board_dupes_merge',{dry:false,limit:8});
+        if(!m.ok){draw('<p style="color:#b91c1c">'+esc(m.message||'Fehler')+' (nochmal starten setzt fort)</p><div class="bdRow" style="justify-content:flex-end"><button class="bdBtn" id="dpDone">Schließen</button></div>');running=false;return}
+        done+=m.merged;if(!m.remaining)break;
+      }
+      running=false;
+      draw('<p><b>Fertig.</b> '+done+' Gruppen zusammengeführt.</p><div class="bdRow" style="justify-content:flex-end"><button class="bdBtn primary" id="dpDone">Schließen</button></div>');
+    }
   };
-  document.getElementById('faCloseBtn').onclick = () => document.getElementById('faModal').classList.add('hidden');
-  document.getElementById('faModal').classList.remove('hidden');
 }
-document.getElementById('faNewIntakeBtn').onclick = () => startFernaufnahme('start_intake', '');
-document.getElementById('faNewBeratungBtn').onclick = () => startFernaufnahme('start_beratung', '');
 
-document.getElementById('loginBtn').onclick = doLogin;
-document.getElementById('loginCode').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-document.getElementById('logoutBtn').onclick = doLogout;
-document.getElementById('custSearch').addEventListener('input', renderCustList);
-
-loadSession();
-if(session && session.expires_at && new Date(session.expires_at) > new Date()){
-  showApp();
-} else {
-  clearSession();
+/* ---------- Ereignisse ---------- */
+function bindEvents(){
+  var root=S.root;
+  root.addEventListener('click',async function(e){
+    var el=e.target;
+    if(S.dragJustEnded)return;
+    var host=$('#bdModalHost');
+    if(S.modalOpen&&host.contains(el)){
+      if(S.cur&&$('#bdTaskBg'))return taskClick(e);
+      if(el.id==='trClose'||el.id==='bdTrashBg'){S.modalOpen=false;host.innerHTML='';render();return}
+      var rs=el.closest('[data-restore]');if(rs){var r=await call('board_task_restore',{id:rs.dataset.restore});if(r.ok){msg('Wiederhergestellt');await load(true);showTrash()}else msg(r.message,true)}
+      return;
+    }
+    var x;
+    if((x=el.closest('[data-list]'))){S.listId=x.dataset.list;store('list',S.listId);render();return}
+    if((x=el.closest('[data-view]'))){S.view=x.dataset.view;store('view',S.view);render();return}
+    if(el.id==='bdReload'){refresh(true);return}
+    if(el.id==='bdTrash'){showTrash();return}
+    if(el.id==='bdImport'){runImport();return}
+    if(el.id==='bdDupes'){runDupes();return}
+    if(el.id==='bdNew'){var t=await dlg({title:'Neue Aufgabe',input:'',ok:'Anlegen'});if(t)createTask(t,null);return}
+    if((x=el.closest('[data-add]'))){
+      var colEl=x.closest('.bdCol'),qh=$('.bdQuickHost',colEl);if(qh.firstChild)return;
+      qh.innerHTML='<input class="bdQuick" placeholder="Titel, Enter zum Anlegen">';var inp=$('input',qh);inp.focus();
+      var done=false;inp.addEventListener('keydown',function(ev){if(ev.key==='Enter'&&inp.value.trim()){done=true;createTask(inp.value.trim(),x.dataset.add)}if(ev.key==='Escape'){done=true;qh.innerHTML=''}});
+      inp.addEventListener('blur',function(){if(!done)qh.innerHTML=''});return;
+    }
+    if((x=el.closest('[data-more]'))){S.more[x.dataset.more]=(S.more[x.dataset.more]||15)+30;render();return}
+    if((x=el.closest('[data-mon]'))){var d=Number(x.dataset.mon);S.month=d===0?new Date():new Date(S.month.getFullYear(),S.month.getMonth()+d,1);render();return}
+    if((x=el.closest('.bdCard,.bdEv,tr.row'))&&x.dataset.id){openTask(x.dataset.id);return}
+  });
+  root.addEventListener('input',function(e){
+    if(e.target.id==='bdQ'){S.q=e.target.value;clearTimeout(S.qt);S.qt=setTimeout(function(){var pos=e.target.selectionStart;render();var q=$('#bdQ');q.focus();q.setSelectionRange(pos,pos)},200)}
+  });
+  root.addEventListener('change',function(e){
+    if(e.target.id==='bdMine'){S.mine=e.target.checked;render()}
+    else if(e.target.id==='bdAll'){S.allLists=e.target.checked;render()}
+    else if(S.cur)taskChange(e);
+  });
+  root.addEventListener('keydown',taskKey);
+  bindDrag();
 }
+
+/* ---------- Start ---------- */
+var BD={
+  async init(rootEl){
+    S.root=rootEl;shell();bindEvents();
+    var v=store('view');if(v==='list'||v==='cal'||v==='board')S.view=v;
+    $('#bdBody').innerHTML='<div class="bdEmpty">Lade Board …</div>';
+    if(await load(true)){render();try{var tid=new URLSearchParams(location.search).get('task');if(tid)openTask(tid)}catch(e){}}
+    clearInterval(S.timer);
+    S.timer=setInterval(function(){if(!document.hidden&&S.root&&S.root.offsetParent!==null)refresh(false)},60000);
+    document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.root&&S.root.offsetParent!==null)refresh(false)});
+  },
+  async show(){if(S.loaded)refresh(false);else if(S.root){if(await load(true))render()}},
+  stop(){clearInterval(S.timer)}
+};
+window.BD=BD;
+})();
+</script>
+<!--BD:END-->
+<!--KD:START-->
+<style>
+.kd{--k-blue:var(--blue,#0E4A8B);--k-border:var(--border,#dbe7f0);--k-muted:var(--muted,#66788a);--k-text:var(--text,#16324f);--k-cyan:var(--cyan,#20C6D4);color:var(--k-text);font-size:14px}
+.kd *{box-sizing:border-box}
+.kd button{font-family:inherit}
+.kdBar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.kdBtn{border:1px solid var(--k-border);background:#fff;color:var(--k-blue);border-radius:12px;padding:9px 13px;font-weight:800;cursor:pointer;font-size:14px}
+.kdBtn.primary{background:var(--k-blue);color:#fff;border-color:var(--k-blue)}
+.kdBtn.on{background:var(--k-blue);color:#fff;border-color:var(--k-blue)}
+.kdBtn.danger{color:#b91c1c}
+.kdBtn:hover{border-color:var(--k-cyan)}
+.kdBtn[disabled]{opacity:.5;cursor:default}
+.kdSearch{flex:1;min-width:160px;max-width:320px;border:1px solid var(--k-border);border-radius:12px;padding:9px 12px;font-size:14px;background:#fff}
+.kdSpacer{flex:1}
+.kdTable{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--k-border);border-radius:12px;overflow:hidden}
+.kdTable th{background:#f2f8fc;color:var(--k-blue);text-align:left;font-size:12px;text-transform:uppercase;padding:10px}
+.kdTable td{padding:10px;border-top:1px solid var(--k-border);vertical-align:top}
+.kdTable tr.row{cursor:pointer}.kdTable tr.row:hover{background:#f7fcfd}
+.kdTable tr.off td{opacity:.55}
+.kdChip{font-size:12px;border-radius:999px;padding:2px 8px;background:#eef3f7;color:var(--k-muted);font-weight:700;white-space:nowrap;display:inline-block}
+.kdChip.ber{background:#efe3fb;color:#6a2fa3}
+.kdChip.late{background:#fde8e8;color:#b91c1c}
+.kdEmpty{background:#fff;border:1px solid var(--k-border);border-radius:14px;padding:18px;color:var(--k-muted)}
+.kdModalBg{position:fixed;inset:0;background:rgba(7,32,58,.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 12px}
+.kdModal{background:#fff;border-radius:18px;width:100%;max-width:820px;padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.kdModal.small{max-width:430px}
+.kdModal h3{margin:0 0 12px;color:var(--k-blue)}
+.kdHead{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.kdHead h3{flex:1;margin:0}
+.kdGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:14px 0}
+.kdGrid .wide{grid-column:1/-1}
+.kdModal label{display:block;font-size:12px;font-weight:900;color:var(--k-muted);text-transform:uppercase;margin-bottom:4px}
+.kdModal input[type=text],.kdModal input[type=date],.kdModal select,.kdModal textarea{width:100%;border:1px solid var(--k-border);border-radius:10px;padding:9px 10px;font-size:14px;font-family:inherit;background:#fff}
+.kdModal input[disabled]{background:#f4f8fb}
+.kdSec{margin-top:20px}
+.kdSecHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.kdSecHead h4{margin:0;color:var(--k-blue);font-size:15px}
+.kdPg{display:grid;grid-template-columns:70px 1fr 1fr auto auto auto;gap:8px;align-items:center;margin-bottom:6px}
+.kdPg label.k{display:flex;gap:5px;align-items:center;font-size:12px;text-transform:none;font-weight:700;margin:0;white-space:nowrap;color:var(--k-text)}
+.kdPg label.k input{width:auto}
+.kdX{border:0;background:transparent;color:var(--k-muted);cursor:pointer;font-size:16px;padding:0 4px}.kdX:hover{color:#b91c1c}
+.kdFile{display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #eef3f7}.kdFile a{flex:1;color:var(--k-blue);font-weight:700;cursor:pointer;word-break:break-all}
+.kdLog{font-size:12px;color:var(--k-muted)}
+.kdSig{display:block;max-height:90px;max-width:100%;background:#fff;border:1px dashed var(--k-border);border-radius:10px;padding:6px}
+.kdRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.kdToast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0b457f;color:#fff;border-radius:12px;padding:10px 16px;z-index:100001;font-weight:700;max-width:90vw}.kdToast.err{background:#b91c1c}
+.kdProg{height:10px;background:#e3edf4;border-radius:99px;overflow:hidden;margin:10px 0}.kdProg i{display:block;height:100%;background:var(--k-blue);width:0}
+.kdBox{background:#f2f6f9;border-radius:10px;padding:10px;font-size:12px;max-height:160px;overflow:auto;white-space:pre-wrap}
+@media(max-width:700px){.kdGrid{grid-template-columns:1fr}.kdPg{grid-template-columns:60px 1fr 1fr}.kdModalBg{padding:0}.kdModal{border-radius:0;min-height:100vh;max-width:none}.kdSearch{max-width:none;flex-basis:100%}.kdHideM{display:none}}
+</style>
+<script>
+(function(){
+'use strict';
+var S={root:null,list:[],q:'',filter:'aktiv',loaded:false,cur:null,toastT:null};
+var KASSEN=['AOK NordWest','AOK NW','Barmer','DAK','TK','KKH','Knappschaft','HanseMerkur','IKK classic','BKK','Techniker Krankenkasse'];
+var ARTEN={nachweis:'Nachweis',vereinbarung:'Beratungsvereinbarung',datenschutz:'Datenschutzinformation',vollmacht:'Vollmacht',vertrag:'Vertrag',sonstiges:'Sonstiges'};
+function H(){return window.BD_HOST||{}}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function $(s,r){return (r||S.root).querySelector(s)}
+async function call(a,p){try{var r=await H().call(a,p||{});return r||{ok:false,message:'Keine Antwort vom Server.'}}catch(e){return{ok:false,message:'Fehler: '+e}}}
+function msg(t,err){var el=$('.kdToast');el.textContent=t;el.className='kdToast'+(err?' err':'');el.style.display='block';clearTimeout(S.toastT);S.toastT=setTimeout(function(){el.style.display='none'},err?6000:2500)}
+function fmtTs(t){if(!t)return'';var d=new Date(t);return isNaN(d)?'':d.toLocaleDateString('de-DE')+' '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}
+function parseDe(s){var m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(s||'');return m?new Date(+m[3],+m[2]-1,+m[1]):null}
+function bytesFmt(n){if(!n)return'';return n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB'}
+function toIso(de){var m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(de||'');return m?m[3]+'-'+m[2]+'-'+m[1]:''}
+function fromIso(iso){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');return m?m[3]+'.'+m[2]+'.'+m[1]:''}
+
+async function load(){
+  var r=await call('kunden_list');
+  if(!r.ok){msg(r.message||'Kunden konnten nicht geladen werden.',true);return false}
+  S.list=r.kunden||[];S.loaded=true;return true;
+}
+function shell(){S.root.innerHTML='<div class="kd"><div class="kdBar" id="kdBar"></div><div id="kdBody"></div><div class="kdToast" style="display:none"></div><div id="kdModalHost"></div><div id="kdDlgHost"></div></div>'}
+function visible(k){
+  var s=k.summary||{};
+  if(S.filter==='aktiv'&&!k.aktiv)return false;
+  if(S.filter==='beratung'&&(!k.aktiv||!s.beratung))return false;
+  if(S.filter==='inaktiv'&&k.aktiv)return false;
+  if(S.q){var h=(k.name+' '+(s.kasse||'')+' '+(s.anschrift||'')).toLowerCase();if(h.indexOf(S.q.toLowerCase())<0)return false}
+  return true;
+}
+function renderBar(){
+  var f=function(id,l){return'<button class="kdBtn'+(S.filter===id?' on':'')+'" data-filter="'+id+'">'+l+'</button>'};
+  var h=f('aktiv','Aktive')+f('beratung','Beratung')+f('inaktiv','Inaktive');
+  h+='<input class="kdSearch" id="kdQ" placeholder="Suchen …" value="'+esc(S.q)+'"><span class="kdSpacer"></span><button class="kdBtn primary" id="kdNew">+ Neuer Kunde</button>';
+  if(H().isAdmin)h+='<button class="kdBtn" id="kdImport">Import aus Studio</button>';
+  h+='<button class="kdBtn" id="kdReload" title="Neu laden">↻</button>';
+  $('#kdBar').innerHTML=h;
+}
+function render(){
+  renderBar();
+  var rows=S.list.filter(visible);
+  var h='<div style="overflow:auto"><table class="kdTable"><tr><th>Name</th><th>Kasse</th><th>PG</th><th>Nächster Termin</th><th class="kdHideM">Letzter Besuch</th><th class="kdHideM">Anschrift</th></tr>';
+  var heute=new Date();heute.setHours(0,0,0,0);
+  rows.forEach(function(k){
+    var s=k.summary||{},t=parseDe(s.naechster_termin);
+    h+='<tr class="row'+(k.aktiv?'':' off')+'" data-id="'+k.id+'"><td><b>'+esc(k.name)+'</b>'+(s.beratung?' <span class="kdChip ber">Beratung</span>':'')+'</td><td>'+esc(s.kasse||'')+'</td><td>'+esc(s.pflegegrad||'')+'</td><td>'+(s.naechster_termin?'<span class="kdChip'+(t&&t<heute?' late':'')+'">'+esc(s.naechster_termin)+'</span>':'')+'</td><td class="kdHideM">'+esc(s.letzter_besuch||'')+'</td><td class="kdHideM">'+esc(s.anschrift||'')+'</td></tr>';
+  });
+  $('#kdBody').innerHTML=h+'</table></div>'+(rows.length?'<div class="kdLog" style="margin-top:8px">'+rows.length+' Einträge</div>':'<div class="kdEmpty" style="margin-top:10px">Keine Kunden gefunden.</div>');
+}
+
+/* ---------- Dialoge ---------- */
+function dlg(o){
+  return new Promise(function(res){
+    var host=$('#kdDlgHost');
+    host.innerHTML='<div class="kdModalBg"><div class="kdModal small"><h3>'+esc(o.title||'')+'</h3>'+(o.text?'<p style="color:var(--k-muted)">'+esc(o.text)+'</p>':'')+'<div class="kdRow" style="justify-content:flex-end;margin-top:16px"><button class="kdBtn" id="kdDlgNo">Abbrechen</button><button class="kdBtn '+(o.danger?'danger':'primary')+'" id="kdDlgOk">'+esc(o.ok||'OK')+'</button></div></div></div>';
+    $('#kdDlgOk',host).onclick=function(){host.innerHTML='';res(true)};
+    $('#kdDlgNo',host).onclick=function(){host.innerHTML='';res(false)};
+  });
+}
+
+/* ---------- Kundenakte ---------- */
+async function openKunde(id){
+  var r=await call('kunden_get',{id:id});
+  if(!r.ok){msg(r.message||'Akte konnte nicht geladen werden.',true);return}
+  S.cur={id:r.kunde.id,version:r.kunde.version,aktiv:r.kunde.aktiv,data:JSON.parse(JSON.stringify(r.kunde.data||{})),dok:r.dokumente||[],isNew:false};
+  draw();
+}
+function newKunde(){
+  S.cur={id:null,version:null,aktiv:true,data:{pflege_name:'',pflege_anschrift:'',pflege_kvnr:'',pflege_kasse:'',pflege_geburtsdatum:'',pflegegrade:[],pflegeberatung_kunde:true},dok:[],isNew:true};
+  draw();
+}
+function field(id,label,val,extra){return'<div class="'+((extra&&extra.wide)?'wide':'')+'"><label>'+label+'</label><input type="text" id="'+id+'" value="'+esc(val||'')+'"'+((extra&&extra.list)?' list="'+extra.list+'"':'')+((extra&&extra.ph)?' placeholder="'+extra.ph+'"':'')+'></div>'}
+function draw(){
+  var c=S.cur,d=c.data;
+  var h='<div class="kdModalBg" id="kdBg"><div class="kdModal">';
+  h+='<div class="kdHead"><h3>'+(c.isNew?'Neuer Kunde':esc(d.pflege_name||''))+'</h3>'+(c.aktiv?'':'<span class="kdChip">inaktiv</span>')+'<button class="kdBtn primary" id="kdSave">Speichern</button><button class="kdBtn" id="kdClose">Schließen</button></div>';
+  h+='<datalist id="kdKassen">'+KASSEN.map(function(k){return'<option value="'+esc(k)+'">'}).join('')+'</datalist>';
+  h+='<div class="kdGrid">'+field('f_name','Name der pflegebedürftigen Person',d.pflege_name,{wide:1})+field('f_geb','Geburtsdatum (TT.MM.JJJJ)',d.pflege_geburtsdatum)+field('f_kvnr','Versichertennummer',d.pflege_kvnr)+field('f_kasse','Pflegekasse',d.pflege_kasse,{list:'kdKassen'})+field('f_anschr','Anschrift',d.pflege_anschrift,{wide:1})+'</div>';
+  h+='<div class="kdRow"><label class="k" style="display:flex;gap:6px;align-items:center;text-transform:none;font-size:14px;color:var(--k-text)"><input type="checkbox" id="f_ber"'+(d.pflegeberatung_kunde?' checked':'')+' style="width:auto"> Beratungskunde (§ 37 Abs. 3)</label></div>';
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Pflegegrad</h4><button class="kdBtn" id="pgAdd">+ Pflegegrad</button></div><div id="kdPgs">';
+  (d.pflegegrade||[]).forEach(function(p,i){
+    h+='<div class="kdPg" data-i="'+i+'"><select data-pg="stufe">'+[1,2,3,4,5].map(function(n){return'<option'+(String(p.stufe)===String(n)?' selected':'')+'>'+n+'</option>'}).join('')+'</select><input type="text" data-pg="von" placeholder="seit TT.MM.JJJJ" value="'+esc(p.von||'')+'"><input type="text" data-pg="bis" placeholder="bis (leer = laufend)" value="'+esc(p.bis||'')+'"><label class="k"><input type="checkbox" data-pg="fortlaufend"'+(p.fortlaufend?' checked':'')+'> fortlaufend</label><label class="k"><input type="checkbox" data-pg="entlastung_genommen"'+(p.entlastung_genommen?' checked':'')+'> Entlastungsbetrag genommen</label><button class="kdX" data-pgdel="'+i+'">×</button></div>';
+  });
+  if(!(d.pflegegrade||[]).length)h+='<div class="kdLog">Noch kein Pflegegrad eingetragen.</div>';
+  h+='</div></div>';
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Angehörige / Bevollmächtigte Person</h4></div><div class="kdGrid">'+field('f_pname','Name',d.person_name)+field('f_pgeb','Geburtsdatum',d.person_geburtsdatum)+field('f_panschr','Anschrift',d.person_anschrift,{wide:1})+'</div></div>';
+  var besuche=Array.isArray(d.beratungsbesuche)?d.beratungsbesuche:[];
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Beratungsbesuche ('+besuche.length+')</h4></div>';
+  if(!besuche.length)h+='<div class="kdLog">Noch keine Besuche erfasst.</div>';
+  besuche.slice().reverse().forEach(function(b){var st=b.status||{};h+='<div class="kdFile"><span style="flex:1"><b>'+esc(b.datum||'')+'</b> '+esc(b.uhrzeit_von||'')+(b.uhrzeit_bis?'–'+esc(b.uhrzeit_bis):'')+' · '+esc(b.beratungsperson_name||'')+'</span><span class="kdLog">'+(st.naechster_termin?'nächster Termin '+esc(st.naechster_termin):'')+'</span></div>'});
+  h+='</div>';
+  if(d.pflege_sig_dataurl)h+='<div class="kdSec"><div class="kdSecHead"><h4>Unterschrift (Stammdaten)</h4></div><img class="kdSig" src="'+esc(d.pflege_sig_dataurl)+'" alt="Unterschrift"></div>';
+  if(!c.isNew){
+    h+='<div class="kdSec"><div class="kdSecHead"><h4>Dokumente</h4><div class="kdRow"><select id="docArt" style="width:auto">'+Object.keys(ARTEN).map(function(k){return'<option value="'+k+'">'+ARTEN[k]+'</option>'}).join('')+'</select><label class="kdBtn" style="cursor:pointer">+ Datei<input type="file" id="docFile" multiple style="display:none"></label></div></div>';
+    c.dok.forEach(function(x){h+='<div class="kdFile"><span class="kdChip">'+esc(ARTEN[x.art]||x.art)+'</span><a data-dok="'+x.id+'">'+esc(x.file_name)+'</a><span class="kdLog">'+bytesFmt(x.size)+' · '+fmtTs(x.created_at)+'</span><button class="kdX" data-dokdel="'+x.id+'">×</button></div>'});
+    if(!c.dok.length)h+='<div class="kdLog">Noch keine Dokumente.</div>';
+    h+='</div>';
+    h+='<div class="kdRow" style="justify-content:space-between;margin-top:22px"><button class="kdBtn '+(c.aktiv?'danger':'')+'" id="kdAktiv">'+(c.aktiv?'Deaktivieren':'Wieder aktivieren')+'</button><span class="kdLog">Version '+esc(c.version)+'</span></div>';
+  }
+  h+='</div></div>';
+  var bg=$('.kdModalBg');var sc=bg?bg.scrollTop:0;
+  $('#kdModalHost').innerHTML=h;
+  var nb=$('.kdModalBg');if(nb)nb.scrollTop=sc;
+}
+function collect(){
+  var c=S.cur,d=c.data;
+  var v=function(id){return($('#'+id)||{}).value||''};
+  d.pflege_name=v('f_name').trim();d.pflege_geburtsdatum=v('f_geb').trim();d.pflege_kvnr=v('f_kvnr').trim();d.pflege_kasse=v('f_kasse').trim();d.pflege_anschrift=v('f_anschr').trim();
+  d.person_name=v('f_pname').trim();d.person_geburtsdatum=v('f_pgeb').trim();d.person_anschrift=v('f_panschr').trim();
+  d.pflegeberatung_kunde=!!($('#f_ber')||{}).checked;
+  var pgs=[];
+  S.root.querySelectorAll('.kdPg').forEach(function(row){
+    var p={};row.querySelectorAll('[data-pg]').forEach(function(el){var k=el.dataset.pg;p[k]=el.type==='checkbox'?el.checked:el.value.trim()});
+    p.stufe=Number(p.stufe)||p.stufe;pgs.push(p);
+  });
+  d.pflegegrade=pgs;
+}
+async function save(){
+  collect();var c=S.cur;
+  if(!c.data.pflege_name){msg('Bitte den Namen eintragen.',true);return}
+  var r=await call('kunden_save',{id:c.id,version:c.version,data:c.data});
+  if(!r.ok){
+    if(r.duplicate&&await dlg({title:'Akte existiert schon',text:'Es gibt bereits eine Akte mit diesem Namen. Diese öffnen?',ok:'Öffnen'})){await openKunde(r.id);return}
+    msg(r.message||'Speichern fehlgeschlagen.',true);return;
+  }
+  msg('Gespeichert');
+  S.cur.id=r.kunde.id;S.cur.version=r.kunde.version;S.cur.isNew=false;
+  var i=S.list.findIndex(function(k){return k.id===r.kunde.id});
+  var row={id:r.kunde.id,name:r.kunde.name,aktiv:r.kunde.aktiv,summary:r.kunde.summary,updated_at:r.kunde.updated_at,version:r.kunde.version};
+  if(i>=0)S.list[i]=row;else S.list.push(row);
+  S.list.sort(function(a,b){return a.name.localeCompare(b.name,'de')});
+  await openKunde(r.kunde.id);
+}
+function closeKunde(){S.cur=null;$('#kdModalHost').innerHTML='';render()}
+async function uploadFiles(files){
+  var c=S.cur,art=($('#docArt')||{}).value||'sonstiges';
+  for(var i=0;i<files.length;i++){
+    var f=files[i];if(f.size>10*1024*1024){msg(f.name+' ist größer als 10 MB.',true);continue}
+    var b64=await new Promise(function(res,rej){var fr=new FileReader();fr.onload=function(){res(String(fr.result).split(',')[1]||'')};fr.onerror=rej;fr.readAsDataURL(f)});
+    msg('Lade '+f.name+' hoch …');
+    var r=await call('kunden_dok_add',{kunde_id:c.id,art:art,file_name:f.name,content_type:f.type,file_b64:b64});
+    if(!r.ok)msg(r.message||'Upload fehlgeschlagen.',true);
+  }
+  var g=await call('kunden_get',{id:c.id});if(g.ok){c.dok=g.dokumente||[];draw()}
+}
+
+/* ---------- Import aus Studio (Admin) ---------- */
+var KEEP=['pflege_name','pflege_anschrift','pflege_kvnr','pflege_kasse','pflege_geburtsdatum','pflege_sig_dataurl','person_name','person_anschrift','person_geburtsdatum','person_kvnr','person_sig_dataurl','pflegegrade','pflegeberatung_kunde','beratungsbesuche','beratung_kalender','leistungsbeziehungen'];
+function slim(d){var o={};KEEP.forEach(function(k){if(d[k]!==undefined&&d[k]!==null&&d[k]!=='')o[k]=d[k]});return o}
+async function runImport(){
+  var host=$('#kdModalHost');
+  host.innerHTML='<div class="kdModalBg"><div class="kdModal small"><h3>Import aus Studio</h3><p style="color:var(--k-muted)">Wählen Sie die vorbereitete Datei „Curafact_Kundenimport_Beratung.json“ (oder einzelne Kunden-JSONs aus Studio). Aus Studio-Dateien werden nur die Felder für die Pflegeberatung übernommen. Bestehende Namen werden übersprungen.</p><input type="file" id="kdImpFile" accept=".json,application/json" multiple><div id="kdImpOut"></div><div class="kdRow" style="justify-content:flex-end;margin-top:14px"><button class="kdBtn" id="kdImpClose">Schließen</button></div></div></div>';
+  $('#kdImpClose',host).onclick=function(){host.innerHTML='';load().then(render)};
+  $('#kdImpFile',host).onchange=async function(e){
+    var out=$('#kdImpOut',host);var items=[];
+    for(var i=0;i<e.target.files.length;i++){
+      try{var j=JSON.parse(await e.target.files[i].text());if(Array.isArray(j))j.forEach(function(x){items.push(slim(x))});else items.push(slim(j))}catch(err){out.innerHTML+='<div class="kdLog">'+esc(e.target.files[i].name)+': keine gültige JSON-Datei</div>'}
+    }
+    items=items.filter(function(x){return x.pflege_name});
+    if(!items.length){out.innerHTML+='<div class="kdLog">Keine Kunden gefunden.</div>';return}
+    var imp=0,skip=0,fail=[];
+    for(var k=0;k<items.length;k+=10){
+      out.innerHTML='<div class="kdProg"><i style="width:'+Math.round(k*100/items.length)+'%"></i></div><div class="kdLog">'+k+' von '+items.length+' …</div>';
+      var r=await call('kunden_import',{items:items.slice(k,k+10)});
+      if(!r.ok){out.innerHTML='<div class="kdLog" style="color:#b91c1c">'+esc(r.message||'Fehler')+'</div>';return}
+      imp+=r.imported;skip+=r.skipped;fail=fail.concat(r.failed||[]);
+    }
+    out.innerHTML='<p><b>Fertig.</b> '+imp+' übernommen, '+skip+' übersprungen (gab es schon)'+(fail.length?', '+fail.length+' fehlgeschlagen':'')+'.</p>'+(fail.length?'<div class="kdBox">'+esc(fail.join('\n'))+'</div>':'');
+  };
+}
+
+/* ---------- Ereignisse ---------- */
+function bind(){
+  var root=S.root;
+  root.addEventListener('click',async function(e){
+    var el=e.target,x;
+    if(S.cur&&$('#kdBg')&&$('#kdModalHost').contains(el)){
+      if(el.id==='kdClose'||el.id==='kdBg'){closeKunde();return}
+      if(el.id==='kdSave'){save();return}
+      if(el.id==='pgAdd'){collect();S.cur.data.pflegegrade.push({stufe:2,von:'',bis:'',fortlaufend:true,entlastung_genommen:false});draw();return}
+      if((x=el.closest('[data-pgdel]'))){collect();S.cur.data.pflegegrade.splice(Number(x.dataset.pgdel),1);draw();return}
+      if((x=el.closest('[data-dok]'))){var u=await call('kunden_dok_url',{id:x.dataset.dok});if(u.ok){if(H().openUrl)H().openUrl(u.url);else window.open(u.url,'_blank')}else msg(u.message,true);return}
+      if((x=el.closest('[data-dokdel]'))){if(await dlg({title:'Dokument löschen?',ok:'Löschen',danger:true})){var r=await call('kunden_dok_delete',{id:x.dataset.dokdel});if(r.ok){var g=await call('kunden_get',{id:S.cur.id});if(g.ok){S.cur.dok=g.dokumente||[];draw()}}else msg(r.message,true)}return}
+      if(el.id==='kdAktiv'){var neu=!S.cur.aktiv;if(await dlg({title:neu?'Wieder aktivieren?':'Kunde deaktivieren?',text:neu?'':'Die Akte bleibt erhalten, erscheint aber nicht mehr unter „Aktive“.',ok:neu?'Aktivieren':'Deaktivieren',danger:!neu})){var r2=await call('kunden_set_aktiv',{id:S.cur.id,aktiv:neu});if(r2.ok){var i=S.list.findIndex(function(k){return k.id===S.cur.id});if(i>=0)S.list[i].aktiv=neu;closeKunde()}else msg(r2.message,true)}return}
+      return;
+    }
+    if(el.id==='kdNew'){newKunde();return}
+    if(el.id==='kdImport'){runImport();return}
+    if(el.id==='kdReload'){if(await load())render();return}
+    if((x=el.closest('[data-filter]'))){S.filter=x.dataset.filter;render();return}
+    if((x=el.closest('tr.row'))){openKunde(x.dataset.id);return}
+  });
+  root.addEventListener('input',function(e){
+    if(e.target.id==='kdQ'){S.q=e.target.value;clearTimeout(S.qt);S.qt=setTimeout(function(){var p=e.target.selectionStart;render();var q=$('#kdQ');q.focus();q.setSelectionRange(p,p)},200)}
+  });
+  root.addEventListener('change',function(e){if(e.target.id==='docFile')uploadFiles(e.target.files)});
+}
+var KD={
+  async init(rootEl){S.root=rootEl;shell();bind();$('#kdBody').innerHTML='<div class="kdEmpty">Lade Kunden …</div>';if(await load())render()},
+  async show(){if(!S.root)return;if(S.cur)return;if(await load())render()},
+  open:function(id){return openKunde(id)}
+};
+window.KD=KD;
+})();
+</script>
+<!--KD:END-->
+<script>
+(function(){
+  var LOCAL=/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  var API=LOCAL?(location.protocol+'//'+location.hostname+':8799'):'https://vdqumlxjmgqrmwlxqwre.supabase.co/functions/v1/studio-api';
+  var KEY='curafact_app_session',IDLE=60*60*1000;
+  var sess=null,started={},idleT=null;
+  function load(){try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.token&&Date.now()-s.last<IDLE)return s}catch(e){}return null}
+  function save(){try{if(sess)localStorage.setItem(KEY,JSON.stringify(sess));else localStorage.removeItem(KEY)}catch(e){}}
+  function show(app){document.getElementById('login').classList.toggle('hidden',app);document.getElementById('app').classList.toggle('hidden',!app)}
+  function logout(msg){
+    if(sess){fetch(API,{method:'POST',headers:{'Content-Type':'application/json','x-curafact-session':sess.token},body:JSON.stringify({action:'logout'})}).catch(function(){})}
+    sess=null;save();show(false);if(window.BD)BD.stop();started={};document.getElementById('bdRoot').innerHTML='';document.getElementById('kdRoot').innerHTML='';
+    document.getElementById('loginErr').textContent=msg||'';document.getElementById('code').value='';
+  }
+  function touch(){if(sess){sess.last=Date.now();save()}}
+  ['click','keydown','touchstart','mousemove'].forEach(function(ev){window.addEventListener(ev,function(){if(sess&&Date.now()-sess.last>15000)touch()},{passive:true})});
+  setInterval(function(){if(sess&&Date.now()-sess.last>IDLE)logout('Aus Sicherheitsgründen abgemeldet (keine Aktivität).')},30000);
+  async function post(action,params){
+    var h={'Content-Type':'application/json'};if(sess)h['x-curafact-session']=sess.token;
+    var r=await fetch(API,{method:'POST',headers:h,body:JSON.stringify(Object.assign({action:action},params||{}))});
+    var j=null;try{j=await r.json()}catch(e){}
+    if(!j)return{ok:false,message:'Server-Fehler '+r.status};
+    if(j.auth_required){logout('Sitzung abgelaufen. Bitte neu anmelden.')}
+    return j;
+  }
+  window.BD_HOST={
+    call:post,
+    get user(){return(sess&&sess.user)||{}},
+    get isAdmin(){return !!sess&&(sess.user.role==='admin'||sess.user.role==='superadmin')},
+    openUrl:function(u){window.open(u,'_blank')}
+  };
+  function tab(name){
+    ['kunden','board'].forEach(function(t){document.getElementById('tab-'+t).classList.toggle('hidden',t!==name)});
+    document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===name)});
+    try{history.replaceState(null,'',location.pathname+location.search+'#'+name)}catch(e){}
+    if(!started[name]){started[name]=true;(name==='board'?BD:KD).init(document.getElementById(name==='board'?'bdRoot':'kdRoot'))}
+    else (name==='board'?BD:KD).show();
+  }
+  document.getElementById('nav').addEventListener('click',function(e){var b=e.target.closest('button[data-tab]');if(b)tab(b.dataset.tab)});
+  function start(){
+    show(true);
+    document.getElementById('who').innerHTML='Angemeldet: <strong>'+(sess.user.display_name||sess.user.username).replace(/[<>&]/g,'')+'</strong>';
+    var want=(location.hash||'').replace('#','');
+    if(/[?&]task=/.test(location.search))want='board';
+    tab(want==='board'?'board':'kunden');
+  }
+  document.getElementById('logout').onclick=function(){logout('')};
+  document.getElementById('loginForm').addEventListener('submit',async function(e){
+    e.preventDefault();var u=document.getElementById('user').value.trim().toLowerCase(),c=document.getElementById('code').value.replace(/\s+/g,'');
+    var err=document.getElementById('loginErr');err.textContent='';
+    if(!u||!c){err.textContent='Bitte Benutzername und Code eingeben.';return}
+    var r=await post('login',{username:u,code:c});
+    if(!r.ok){err.textContent=r.message||'Anmeldung fehlgeschlagen.';return}
+    sess={token:r.token,user:r.user,last:Date.now()};save();start();
+  });
+  sess=load();
+  if(sess)start();else show(false);
+})();
 </script>
 </body></html>
