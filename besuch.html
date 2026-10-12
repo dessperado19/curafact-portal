@@ -221,6 +221,13 @@ button{font-family:inherit;border-radius:12px}
     <p class="note">Wird vorausgefüllt, wenn die Kasse in Studio hinterlegt ist; sonst leer lassen, Studio ergänzt sie.</p>
   </div>
 
+  <div class="box" id="unterlagenBox2">
+    <h2>Unterlagen der Beratungsstelle</h2>
+    <div class="mini" id="u_hinweis" style="margin-bottom:8px"></div>
+    <label class="checkline"><input type="checkbox" id="u_datenschutz" checked><span>Datenschutzinformation erstellen (Ausdruck der pflegebedürftigen Person aushändigen)</span></label>
+    <label class="checkline"><input type="checkbox" id="u_vereinbarung" checked><span>Beratungsvereinbarung erstellen – mit der Unterschrift der pflegebedürftigen Person (dieselbe wie beim Nachweis)</span></label>
+  </div>
+
   <div class="box" id="terminBox">
     <h2>Nächster Beratungsbesuch</h2>
     <label>Termin (TT.MM.JJJJ) – Vorschlag nach Pflegegrad, änderbar</label><input type="text" id="naechster_termin" placeholder="z.B. 12.03.2027">
@@ -420,6 +427,211 @@ if(typeof module!=='undefined'&&module.exports)module.exports=NW;
 })(typeof window!=='undefined'?window:globalThis);
 </script>
 <!--NW:END-->
+<!--DK:START-->
+<script>
+/* Beratungsunterlagen (Datenschutzinformation, Beratungsvereinbarung, Vollmacht) im Browser als PDF erzeugen.
+   Vorlagen: assets/dokumente/<id>.json (aus den Word-Vorlagen, scripts/dokumente_vorlagen_erzeugen.py), Briefkopf wie in Studio
+   (türkise Leiste, Logo, dreispaltige Fußzeile). Benötigt pdf-lib (window.PDFLib).
+   Aufruf: DOK.erzeugen(vorlage, werte, {briefkopf:{name,zeilen1,zeilen2,zeilen3}, logo:ArrayBuffer}) -> Uint8Array */
+(function(root){
+'use strict';
+var PL=root.PDFLib||(typeof require!=='undefined'?require('pdf-lib'):null);
+var MM=72/25.4, W=595.28, H=841.89;
+var M={top:47*MM,left:25*MM,right:20*MM,bottom:36*MM};
+var LUECKE='________________', SIG_LINIE='_________________________________';
+var TEXT=[0.2,0.2,0.2], BLAU=[15/255,63/255,122/255];
+function hexRgb(h){h=String(h||'').replace('#','');if(h.length!==6)return null;return [parseInt(h.slice(0,2),16)/255,parseInt(h.slice(2,4),16)/255,parseInt(h.slice(4,6),16)/255]}
+function b64ToBytes(b64){if(typeof atob==='function'){var bin=atob(b64),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u}return new Uint8Array(Buffer.from(b64,'base64'))}
+function safe(font,text){var o='';for(var i=0;i<text.length;i++){var ch=text[i];if(ch==='\n'){o+=ch;continue}try{font.encodeText(ch);o+=ch}catch(e){o+='?'}}return o}
+function fill(text,vals){
+  return String(text||'').replace(/\{\{\s*(\w+)\s*\}\}/g,function(_,k){var v=vals[k];if(v==null||v==='')return k.indexOf('sig_')===0?SIG_LINIE:LUECKE;return String(v)});
+}
+function isSigPara(b){
+  var t=(b.runs||[]).map(function(r){return r.x||''}).join('').trim();
+  var m=/^\{\{\s*(sig_\w+)\s*\}\}$/.exec(t);return m?m[1]:null;
+}
+async function erzeugen(vorlage,vals,opts){
+  opts=opts||{};vals=vals||{};
+  var doc=await PL.PDFDocument.create();
+  var F={r:await doc.embedFont(PL.StandardFonts.Helvetica),b:await doc.embedFont(PL.StandardFonts.HelveticaBold),i:await doc.embedFont(PL.StandardFonts.HelveticaOblique),bi:await doc.embedFont(PL.StandardFonts.HelveticaBoldOblique)};
+  var logo=opts.logo?await doc.embedPng(opts.logo):null, bk=opts.briefkopf||null;
+  var imgCache={};
+  async function img(url){
+    if(imgCache[url])return imgCache[url];
+    var c=url.indexOf(','),head=url.slice(0,c),bytes=b64ToBytes(url.slice(c+1));
+    return imgCache[url]=/image\/jpe?g/i.test(head)?await doc.embedJpg(bytes):await doc.embedPng(bytes);
+  }
+  var page,y;
+  function briefkopf(p){
+    if(!bk)return;
+    p.drawRectangle({x:0,y:H-5*MM,width:W,height:5*MM,color:PL.rgb(22/255,169/255,186/255)});
+    if(logo){var lw=61*MM,lh=lw*logo.height/logo.width;p.drawImage(logo,{x:W-M.right-lw,y:H-13*MM-lh,width:lw,height:lh})}
+    var fy=H-271*MM;
+    p.drawLine({start:{x:0,y:fy},end:{x:W,y:fy},thickness:0.5,color:PL.rgb(0.604,0.639,0.678)});
+    var cols=[[25*MM,56*MM,[{t:bk.name,bold:true}].concat((bk.zeilen1||[]).map(function(t){return{t:t}}))],[84*MM,48*MM,(bk.zeilen2||[]).map(function(t){return{t:t}})],[132*MM,58*MM,(bk.zeilen3||[]).map(function(t){return{t:t}})]];
+    cols.forEach(function(c){
+      var yy=fy-3.2*MM-6.6*0.9;
+      c[2].forEach(function(l){
+        var f=l.bold?F.b:F.r,words=safe(f,l.t||'').split(' '),cur='';
+        var lines=[];words.forEach(function(w){var cand=cur?cur+' '+w:w;if(!cur||f.widthOfTextAtSize(cand,6.6)<=c[1])cur=cand;else{lines.push(cur);cur=w}});lines.push(cur);
+        lines.forEach(function(t){p.drawText(t,{x:c[0],y:yy,size:6.6,font:f,color:l.bold?PL.rgb(BLAU[0],BLAU[1],BLAU[2]):PL.rgb(0.42,0.455,0.502)});yy-=6.6*1.55});
+      });
+    });
+  }
+  function newPage(){page=doc.addPage([W,H]);briefkopf(page);y=H-M.top}
+  newPage();
+  var bottom=M.bottom+6*MM*0; /* Inhalt endet 36 mm über dem unteren Rand */
+  function fontFor(r){return r.b&&r.i?F.bi:(r.b?F.b:(r.i?F.i:F.r))}
+  /* Absatz in Zeilen umbrechen: Liste von {items:[{t,font,size,color}], h, w} */
+  function layout(b,width,defSize){
+    var toks=[];
+    (b.runs||[]).forEach(function(r){
+      if(r.pb){toks.push({pb:1});return}
+      var size=r.s||defSize,font=fontFor(r),col=hexRgb(r.c)||((r.b&&size>=10.9)?BLAU:TEXT);
+      var text=safe(font,fill(r.x,vals));
+      text.split('\n').forEach(function(part,pi){
+        if(pi>0)toks.push({br:1,size:size});
+        part.split(/( +)/).forEach(function(w){if(w!=='')toks.push({t:w,font:font,size:size,color:col,sp:/^ +$/.test(w)})});
+      });
+    });
+    var lines=[],cur={items:[],w:0,size:defSize};
+    function flush(){while(cur.items.length&&cur.items[cur.items.length-1].sp){cur.w-=cur.items[cur.items.length-1].wd;cur.items.pop()}cur.h=Math.max(cur.size,defSize*0.9)*1.3;lines.push(cur);cur={items:[],w:0,size:defSize}}
+    toks.forEach(function(k){
+      if(k.pb){flush();lines.push({pb:1,h:0,items:[]});return}
+      if(k.br){flush();return}
+      var wd=k.font.widthOfTextAtSize(k.t,k.size);k.wd=wd;
+      if(!k.sp&&cur.w+wd>width&&cur.items.length){flush()}
+      if(k.sp&&!cur.items.length)return;
+      if(!k.sp&&wd>width){ /* sehr langes Wort: zeichenweise */
+        var part='';for(var ci=0;ci<k.t.length;ci++){var tst=part+k.t[ci];if(k.font.widthOfTextAtSize(tst,k.size)>width-cur.w&&part){cur.items.push({t:part,font:k.font,size:k.size,color:k.color,wd:k.font.widthOfTextAtSize(part,k.size)});cur.w+=k.font.widthOfTextAtSize(part,k.size);cur.size=Math.max(cur.size,k.size);flush();part=k.t[ci]}else part=tst}
+        if(part){var w2=k.font.widthOfTextAtSize(part,k.size);cur.items.push({t:part,font:k.font,size:k.size,color:k.color,wd:w2});cur.w+=w2;cur.size=Math.max(cur.size,k.size)}
+        return;
+      }
+      cur.items.push(k);cur.w+=wd;cur.size=Math.max(cur.size,k.size);
+    });
+    if(cur.items.length||!lines.length)flush();
+    return lines;
+  }
+  function drawLines(lines,x0,width,al,startY,pg){
+    var yy=startY;
+    lines.forEach(function(ln){
+      var base=yy-0.9055*ln.size;
+      var x=x0;if(al==='center')x=x0+(width-ln.w)/2;else if(al==='right')x=x0+width-ln.w;
+      ln.items.forEach(function(it){pg.drawText(it.t,{x:x,y:base,size:it.size,font:it.font,color:PL.rgb(it.color[0],it.color[1],it.color[2])});x+=it.wd});
+      yy-=ln.h;
+    });
+    return yy;
+  }
+  var contentW=W-M.left-M.right;
+  async function sigImage(url,maxW,maxH){var im=await img(url),s=Math.min(maxW/im.width,maxH/im.height);return{im:im,w:im.width*s,h:im.height*s}}
+  async function blockHeight(b,width){ /* nur Absätze */
+    var sig=isSigPara(b);
+    if(sig&&typeof vals[sig]==='string'&&vals[sig].indexOf('data:image/')===0){var si=await sigImage(vals[sig],Math.min(width,50*MM),20*MM);return{sig:si,h:si.h+4,lines:null}}
+    var ls=layout(b,width-(b.li||0),vorlage.size||10.5);
+    var h=ls.reduce(function(a,l){return a+l.h},0);
+    if(sig)h+=16;  /* Platz zum handschriftlichen Unterschreiben auf der Linie */
+    return{lines:ls,h:h,handsig:!!sig};
+  }
+  var blocks=vorlage.blocks||[];
+  for(var bi=0;bi<blocks.length;bi++){
+    var b=blocks[bi];
+    if(b.t==='p'){
+      var sb=b.sb||0,sa=b.sa!=null?b.sa:5;
+      var m=await blockHeight(b,contentW);
+      if(m.lines&&m.lines.some(function(l){return l.pb})){ /* Seitenumbruch im Absatz */
+        newPage();continue;
+      }
+      var need=sb+(m.lines?m.lines[0].h:m.h);
+      if(b.kn&&blocks[bi+1]&&blocks[bi+1].t==='p'){var nm=await blockHeight(blocks[bi+1],contentW);need+=sa+(blocks[bi+1].sb||0)+(nm.lines?nm.lines[0].h:nm.h)}
+      if(y-need<bottom&&y<H-M.top-1)newPage();
+      y-=sb;
+      if(m.sig){page.drawImage(m.sig.im,{x:M.left+(b.li||0),y:y-m.sig.h,width:m.sig.w,height:m.sig.h});y-=m.h}
+      else{
+        if(m.handsig)y-=16;
+        /* Absatz zeilenweise über Seitengrenzen */
+        var rest=m.lines.slice();
+        while(rest.length){
+          var fit=[];var hh=0;
+          while(rest.length&&(y-hh-rest[0].h>=bottom||!fit.length&&y>=H-M.top-1)){hh+=rest[0].h;fit.push(rest.shift())}
+          if(!fit.length){newPage();continue}
+          drawLines(fit,M.left+(b.li||0),contentW-(b.li||0),b.al,y,page);y-=hh;
+          if(rest.length)newPage();
+        }
+      }
+      y-=sa;
+    }else if(b.t==='tbl'){
+      var rows=b.rows||[],ncol=Math.max.apply(null,rows.map(function(r){return r.length})),cw=contentW/ncol,padX=5,padY=3;
+      var meas=[],total=4;
+      for(var ri=0;ri<rows.length;ri++){
+        var cells=[],rh=0;
+        for(var ci2=0;ci2<rows[ri].length;ci2++){
+          var ch=padY*2,items=[];
+          for(var pi=0;pi<rows[ri][ci2].length;pi++){var pb=rows[ri][ci2][pi],mm=await blockHeight(pb,cw-padX*2);items.push({b:pb,m:mm});ch+=mm.h+(mm.handsig?16:0)+2}
+          cells.push({items:items,h:ch});rh=Math.max(rh,ch);
+        }
+        meas.push({cells:cells,h:rh});total+=rh;
+      }
+      if(y-total<bottom&&y<H-M.top-1)newPage();
+      y-=4;
+      for(var r3=0;r3<meas.length;r3++){
+        for(var c3=0;c3<meas[r3].cells.length;c3++){
+          var cx=M.left+c3*cw+padX,cy=y-padY;
+          meas[r3].cells[c3].items.forEach(function(it){
+            if(it.m.sig){page.drawImage(it.m.sig.im,{x:cx,y:cy-it.m.sig.h,width:it.m.sig.w,height:it.m.sig.h});cy-=it.m.h+2}
+            else{if(it.m.handsig)cy-=16;cy=drawLines(it.m.lines,cx,cw-padX*2,it.b.al,cy,page)-2}
+          });
+        }
+        y-=meas[r3].h;
+      }
+      y-=8;
+    }
+  }
+  return await doc.save();
+}
+function sigVon(cfg,name){
+  var sp=(cfg&&cfg.unterschriften)||{},n=String(name||'').trim().toLowerCase();
+  for(var k in sp){if(k.trim().toLowerCase()===n&&String(sp[k]).indexOf('data:image/')===0)return sp[k]}
+  return '';
+}
+/* Werte wie Studio (build_mapping): Träger aus der Konfiguration, Kunde aus der Akte; Unterschrift der UG: bevollmächtigte
+   Beratungsperson, sobald die Vollmacht datiert ist, sonst Linie zum handschriftlichen Unterschreiben. */
+function unterlagenWerte(id,ctx){
+  var c=ctx.kunde||{},cfg=ctx.cfg||{},tr=cfg.traeger||{},bv=tr.bevollmaechtigte||{},un=cfg.unterlagen||{};
+  var v={};for(var k in (tr.map||{}))v[k]=tr.map[k];
+  v.pflege_name=c.pflege_name||'';v.pflege_anschrift=c.pflege_anschrift||'';v.pflege_geburtsdatum=c.pflege_geburtsdatum||'';
+  v.pflege_kvnr=c.pflege_kvnr||'';v.pflege_kasse=c.pflege_kasse||'';v.person_name=(c.person_name||'').trim()||'entfällt';
+  v.vertrag_ort=ctx.ort||'';v.vertrag_datum=ctx.datum||'';
+  v.auftragsverarbeiter=un.auftragsverarbeiter||'';v.aufbewahrung_dokumentation=un.aufbewahrung_dokumentation||'10 Jahre';
+  v.sig_kunde=ctx.sigKunde||'';
+  var hatVollmacht=!!(bv.name&&bv.datum);
+  if(hatVollmacht){v.unterzeichner_traeger=bv.name+' (bevollmächtigt)';v.sig_traeger=sigVon(cfg,bv.name)}
+  else{v.unterzeichner_traeger=tr.gf_name||'';v.sig_traeger=sigVon(cfg,tr.gf_name)}
+  if(id==='vollmacht'){
+    v.gf_name=tr.gf_name||'';v.bevollmaechtigte_name=bv.name||'';v.bevollmaechtigte_funktion=bv.funktion||'';
+    v.sig_traeger=sigVon(cfg,tr.gf_name);v.sig_partner=sigVon(cfg,bv.name);
+  }
+  return v;
+}
+var DATEINAMEN={datenschutz:'Datenschutzinformation',vereinbarung:'Beratungsvereinbarung',vollmacht:'Vollmacht_Beratungsperson'};
+async function unterlage(id,ctx,base){
+  var a=await DOK.laden(base||'',id);
+  var cfg=ctx.cfg||{},bk=(cfg.traeger&&cfg.traeger.briefkopf)||null;
+  var bytes=await erzeugen(a.vorlage,unterlagenWerte(id,ctx),{briefkopf:bk,logo:a.logo});
+  var d=String(ctx.datum||'').replace(/[^\w.-]/g,'_');
+  return {bytes:bytes,fileName:DATEINAMEN[id]+(d?'_'+d:'')+'.pdf',titel:(a.vorlage.titel||id)+(ctx.datum?' '+ctx.datum:''),art:id==='vollmacht'?'vollmacht':id};
+}
+var DOK={erzeugen:erzeugen,unterlage:unterlage,unterlagenWerte:unterlagenWerte,
+  async laden(base,id){
+    base=base||'';
+    var v=await fetch(base+'assets/dokumente/'+id+'.json').then(function(r){if(!r.ok)throw new Error('Vorlage „'+id+'“ nicht gefunden');return r.json()});
+    var logo=await fetch(base+'assets/dokumente/briefkopf_logo.png').then(function(r){return r.ok?r.arrayBuffer():null});
+    return {vorlage:v,logo:logo};
+  }};
+root.DOK=DOK;
+if(typeof module!=='undefined'&&module.exports)module.exports=DOK;
+})(typeof window!=='undefined'?window:globalThis);
+</script>
+<!--DK:END-->
 <script>
 var LOCAL=/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 var API=LOCAL?(location.protocol+'//'+location.hostname+':8799'):'https://vdqumlxjmgqrmwlxqwre.supabase.co/functions/v1/studio-api';
@@ -799,6 +1011,7 @@ function setV(id,v){var el=$(id);if(el&&v!=null&&v!=='')el.value=v}
     if(GESPEICHERT.pflege||GESPEICHERT.person)addStoredSigButtons('pflege',sigPflege);
     var tb=cfg.textbausteine;if(tb&&!Array.isArray(tb))tb=tb.bausteine;
     if(tb&&tb.length){BAUSTEINE=tb;buildToolbars()}
+    unterlagenStand(k.dokumente||[]);
     terminVorschlag();
     $('pageSub').textContent='Beratungsbesuch für '+(c.pflege_name||'');
   };
@@ -806,6 +1019,12 @@ function setV(id,v){var el=$(id);if(el&&v!=null&&v!=='')el.value=v}
 })();
 
 function kasseEintragFuer(text){var t=String(text||'').toLowerCase(),ks=(CFG&&CFG.kassen)||[];for(var i=0;i<ks.length;i++){if((ks[i].match||[]).some(function(x){return t.indexOf(x)>=0}))return ks[i]}return null}
+function unterlagenStand(dok){
+  var hat=function(art){return dok.filter(function(d){return d.art===art}).length>0}, hin=[];
+  if(hat('datenschutz')){$('u_datenschutz').checked=false;hin.push('Die Datenschutzinformation liegt schon in der Akte.')}
+  if(hat('vereinbarung')){$('u_vereinbarung').checked=false;hin.push('Die Beratungsvereinbarung liegt schon in der Akte.')}
+  $('u_hinweis').textContent=hin.join(' ');
+}
 /* Nächster Termin: Pflegegrad 4/5 = +2 Monate, sonst +5 Monate; Wochenende -> Freitag (wie Studio) */
 function terminVorschlag(force){
   var f=$('naechster_termin');if(!f)return;
@@ -961,8 +1180,22 @@ $('submitBtn').onclick=async function(){
     var fn='Nachweis_'+(besuch.datum||'Besuch').replace(/[^\w.-]/g,'_')+'.pdf';
     var up=await post('kunden_dok_add',{kunde_id:KUNDE,art:'nachweis',titel:'Nachweis '+besuch.datum,file_name:fn,content_type:'application/pdf',file_b64:bytesToB64(bytes)});
     if(!up.ok)throw new Error(up.message||'Ablegen fehlgeschlagen');
-    var blobUrl=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
-    msg.innerHTML='<div style="color:#0b7b32;font-weight:800">Gespeichert. Der Nachweis liegt in der Kundenakte.</div><div style="margin-top:10px"><a href="'+blobUrl+'" target="_blank" rel="noopener" style="display:inline-block;padding:12px 16px;border-radius:10px;background:#0f3f7a;color:#fff;font-weight:800;text-decoration:none">Nachweis öffnen</a> <a href="./#kunden" style="display:inline-block;padding:12px 16px;border-radius:10px;border:1px solid #cdd8e4;color:#0f3f7a;font-weight:800;text-decoration:none">Zurück zu Curafact</a></div>';
+    var links=[{t:'Nachweis öffnen',u:URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}))}], fehler=[];
+    var ortTeil=(besuch.ort_datum_unterschrift||'').split(',')[0].trim();
+    var ctx={kunde:cust,cfg:CFG,ort:ortTeil,datum:besuch.datum,sigKunde:sigP};
+    for(var ui=0;ui<2;ui++){
+      var uid=ui===0?'datenschutz':'vereinbarung';
+      if(!$('u_'+uid).checked)continue;
+      try{
+        msg.textContent='Besuch gespeichert. '+(uid==='datenschutz'?'Datenschutzinformation':'Beratungsvereinbarung')+' wird erstellt …';
+        var u=await DOK.unterlage(uid,ctx,'');
+        var up2=await post('kunden_dok_add',{kunde_id:KUNDE,art:u.art,titel:u.titel,file_name:u.fileName,content_type:'application/pdf',file_b64:bytesToB64(u.bytes)});
+        if(!up2.ok)throw new Error(up2.message||'Ablegen fehlgeschlagen');
+        links.push({t:(uid==='datenschutz'?'Datenschutzinformation':'Beratungsvereinbarung')+' öffnen',u:URL.createObjectURL(new Blob([u.bytes],{type:'application/pdf'}))});
+      }catch(e2){fehler.push((uid==='datenschutz'?'Datenschutzinformation':'Beratungsvereinbarung')+': '+String(e2&&e2.message||e2))}
+    }
+    var linkHtml=links.map(function(l){return '<a href="'+l.u+'" target="_blank" rel="noopener" style="display:inline-block;margin:0 6px 8px 0;padding:12px 16px;border-radius:10px;background:#0f3f7a;color:#fff;font-weight:800;text-decoration:none">'+l.t+'</a>'}).join('');
+    msg.innerHTML='<div style="color:#0b7b32;font-weight:800">Gespeichert. Nachweis'+(links.length>1?' und Unterlagen':'')+' liegen in der Kundenakte.</div>'+(fehler.length?'<div style="color:#b45309;font-weight:700;margin-top:6px">'+fehler.join('<br>').replace(/</g,'&lt;')+' – in der Kundenakte neu erstellen.</div>':'')+'<div style="margin-top:10px">'+linkHtml+'<a href="./#kunden" style="display:inline-block;padding:12px 16px;border-radius:10px;border:1px solid #cdd8e4;color:#0f3f7a;font-weight:800;text-decoration:none">Zurück zu Curafact</a></div>';
   }catch(e){
     msg.innerHTML='<div style="color:#b45309;font-weight:700">Der Besuch ist gespeichert, aber der Nachweis konnte nicht erstellt werden: '+String(e&&e.message||e).replace(/</g,'&lt;')+'. In der Kundenakte kann er neu erstellt werden.</div><div style="margin-top:10px"><a href="./#kunden" style="display:inline-block;padding:12px 16px;border-radius:10px;border:1px solid #cdd8e4;color:#0f3f7a;font-weight:800;text-decoration:none">Zurück zu Curafact</a></div>';
   }

@@ -1,0 +1,401 @@
+{
+ "size": 10.5,
+ "blocks": [
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "BERATUNGSVEREINBARUNG",
+     "b": 1,
+     "s": 15.0
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Beratungsbesuche nach § 37 Abs. 3 SGB XI",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sa": 8.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "zwischen"
+    }
+   ],
+   "sa": 2.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "{{traeger_name}}",
+     "b": 1
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "{{traeger_anschrift}}"
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "anerkannte Beratungsstelle nach § 37 Abs. 7 SGB XI, IK {{traeger_ik}}"
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "– nachfolgend „Beratungsstelle“ –"
+    }
+   ],
+   "sa": 6.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "und"
+    }
+   ],
+   "sa": 2.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "{{pflege_name}}",
+     "b": 1
+    },
+    {
+     "x": ", geboren am {{pflege_geburtsdatum}}"
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "{{pflege_anschrift}}"
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Pflegekasse: {{pflege_kasse}}"
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Versichertennummer: {{pflege_kvnr}}"
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "gesetzlich vertreten durch: {{person_name}}"
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "– nachfolgend „versicherte Person“ –"
+    }
+   ],
+   "sa": 6.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "§ 1 Gegenstand",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "(1) Die Beratungsstelle führt bei der versicherten Person Beratungsbesuche nach § 37 Abs. 3 SGB XI durch. Inhalt und Qualität richten sich nach den Empfehlungen nach § 37 Abs. 5 SGB XI in der jeweils gültigen Fassung."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "(2) Die Beratungsbesuche finden in der Häuslichkeit statt oder, soweit rechtlich zulässig und von der versicherten Person gewünscht, per Videokonferenz. Termine werden gemeinsam vereinbart; die Beratungsstelle achtet auf die gesetzlich vorgesehenen Abstände."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "§ 2 Kosten",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "(1) Der Beratungsbesuch ist für die versicherte Person kostenfrei. Die Beratungsstelle rechnet die Vergütung unmittelbar mit der zuständigen Pflegekasse ab. Eine Zuzahlung wird nicht erhoben."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "(2) Diese Vereinbarung gilt für Versicherte der sozialen Pflegeversicherung. Für privat Versicherte wird die Abrechnung gesondert vereinbart."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "§ 3 Durchführung und Nachweis",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "(1) Die Beratungsbesuche werden ausschließlich von Pflegefachkräften bzw. Pflegeberaterinnen und Pflegeberatern mit der dafür erforderlichen Qualifikation durchgeführt."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "(2) Über jeden Beratungsbesuch wird ein Nachweis auf dem einheitlichen Formular erstellt und unverzüglich an die Pflegekasse übermittelt. Erkenntnisse und Empfehlungen werden der Pflegekasse nur mit Einwilligung der versicherten Person mitgeteilt; diese wird auf dem Nachweisformular erteilt oder verweigert. Die versicherte Person erhält eine Ausfertigung."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "§ 4 Neutralität und Unabhängigkeit",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "(1) Die Beratungsstelle berät neutral und unabhängig. Sie empfiehlt keine Pflegedienste, Anbieter oder Leistungserbringer aus wirtschaftlichen Interessen; Empfehlungen werden fachlich begründet und, soweit möglich, als Auswahlmöglichkeiten dargestellt."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "(2) Die Beratung ist nicht an die Inanspruchnahme weiterer Leistungen der Beratungsstelle oder des Unternehmens gebunden. Andere Leistungen, etwa ein Büro- und Abrechnungsservice, werden nur auf Grundlage einer gesonderten schriftlichen Vereinbarung erbracht. Im Rahmen der Beratung wird für solche Leistungen nicht geworben."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "§ 5 Termine",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Termine können von beiden Seiten abgesagt oder verlegt werden; die versicherte Person informiert die Beratungsstelle möglichst frühzeitig. Für abgesagte Termine entstehen keine Kosten."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "§ 6 Verschwiegenheit und Datenschutz",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Die Beratungsstelle und ihre Mitarbeitenden sind zur Verschwiegenheit über alle Angelegenheiten der versicherten Person verpflichtet. Die Verarbeitung personenbezogener Daten erfolgt nach der gesonderten Datenschutzinformation, die der versicherten Person ausgehändigt wurde."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "§ 7 Laufzeit und Kündigung",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Die Vereinbarung gilt auf unbestimmte Zeit. Beide Seiten können sie jederzeit ohne Einhaltung einer Frist in Textform kündigen. Das Recht der versicherten Person, die Beratungsstelle frei zu wählen, bleibt unberührt."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "§ 8 Schlussbestimmungen",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Änderungen und Ergänzungen bedürfen der Textform. Sollte eine Bestimmung unwirksam sein, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Ort, Datum: {{vertrag_ort}}, {{vertrag_datum}}"
+    }
+   ],
+   "sb": 12.0
+  },
+  {
+   "t": "tbl",
+   "rows": [
+    [
+     [
+      {
+       "t": "p",
+       "runs": [
+        {
+         "x": "{{sig_kunde}}"
+        }
+       ]
+      }
+     ],
+     [
+      {
+       "t": "p",
+       "runs": [
+        {
+         "x": "{{sig_traeger}}"
+        }
+       ]
+      }
+     ]
+    ],
+    [
+     [
+      {
+       "t": "p",
+       "runs": [
+        {
+         "x": "Versicherte Person bzw. gesetzliche Vertretung"
+        }
+       ]
+      }
+     ],
+     [
+      {
+       "t": "p",
+       "runs": [
+        {
+         "x": "für die Beratungsstelle: {{unterzeichner_traeger}}"
+        }
+       ]
+      }
+     ]
+    ]
+   ]
+  }
+ ],
+ "id": "vereinbarung",
+ "titel": "Beratungsvereinbarung",
+ "quelle": "UG_07_Beratungsvereinbarung.docx"
+}

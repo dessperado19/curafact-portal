@@ -1,0 +1,248 @@
+{
+ "size": 10.5,
+ "blocks": [
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "VOLLMACHT",
+     "b": 1,
+     "s": 15.0
+    }
+   ],
+   "sb": 0.0,
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "zur Unterzeichnung von Beratungsvereinbarungen und Nachweisen (§ 37 Abs. 3 SGB XI)",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 0.0,
+   "sa": 8.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Vollmachtgeberin",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "{{traeger_name}}",
+     "b": 1
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "{{traeger_anschrift}}"
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "vertreten durch den alleinvertretungsberechtigten Geschäftsführer {{gf_name}}"
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "– nachfolgend „Beratungsstelle“ –"
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Bevollmächtigte Person",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "{{bevollmaechtigte_name}}",
+     "b": 1
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Funktion: {{bevollmaechtigte_funktion}}"
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "§ 1 Umfang der Vollmacht",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Die bevollmächtigte Person ist berechtigt, die Beratungsstelle bei folgenden Handlungen im Rahmen der Beratungsbesuche nach § 37 Abs. 3 SGB XI zu vertreten:"
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Abschluss und Unterzeichnung der Beratungsvereinbarung mit versicherten Personen bzw. deren gesetzlicher Vertretung,"
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Aushändigung der Datenschutzinformation zum Beratungsbesuch,"
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Unterzeichnung des Nachweises über den Beratungsbesuch als Beratungsperson."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "§ 2 Nicht umfasst",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Nicht von der Vollmacht umfasst sind alle anderen Rechtsgeschäfte der Beratungsstelle, insbesondere Zahlungsfreigaben, Verträge mit Dritten, Änderungen der Vertretungsverhältnisse und die Erteilung weiterer Vollmachten. Von den Beschränkungen des § 181 BGB ist die bevollmächtigte Person nicht befreit."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "§ 3 Dauer und Widerruf",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Die Vollmacht gilt ab der Unterzeichnung auf unbestimmte Zeit. Die Beratungsstelle kann sie jederzeit in Textform widerrufen. Sie endet mit dem Ende der Tätigkeit der bevollmächtigten Person für die Beratungsstelle."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Ort, Datum: {{vertrag_ort}}, {{vertrag_datum}}"
+    }
+   ],
+   "sb": 12.0
+  },
+  {
+   "t": "tbl",
+   "rows": [
+    [
+     [
+      {
+       "t": "p",
+       "runs": [
+        {
+         "x": "{{sig_traeger}}"
+        }
+       ]
+      }
+     ],
+     [
+      {
+       "t": "p",
+       "runs": [
+        {
+         "x": "{{sig_partner}}"
+        }
+       ]
+      }
+     ]
+    ],
+    [
+     [
+      {
+       "t": "p",
+       "runs": [
+        {
+         "x": "für die Beratungsstelle: {{gf_name}} (Geschäftsführer)"
+        }
+       ]
+      }
+     ],
+     [
+      {
+       "t": "p",
+       "runs": [
+        {
+         "x": "Bevollmächtigte Person: {{bevollmaechtigte_name}}"
+        }
+       ]
+      }
+     ]
+    ]
+   ]
+  }
+ ],
+ "id": "vollmacht",
+ "titel": "Vollmacht Beratungsperson",
+ "quelle": "UG_08_Vollmacht_Beratungsstelle.docx"
+}

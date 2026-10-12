@@ -1,0 +1,463 @@
+{
+ "size": 10.5,
+ "blocks": [
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "DATENSCHUTZINFORMATION",
+     "b": 1,
+     "s": 15.0
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "gemäß Art. 13 DSGVO – für Beratungsbesuche nach § 37 Abs. 3 SGB XI",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sa": 8.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Diese Information erhalten Sie, weil wir als anerkannte Beratungsstelle nach § 37 Abs. 7 SGB XI einen Beratungsbesuch bei Ihnen durchführen. Bitte bewahren Sie sie auf."
+    }
+   ],
+   "sa": 6.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "1. Verantwortlicher",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "{{traeger_name}}",
+     "b": 1
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "{{traeger_anschrift}}"
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "E-Mail: {{traeger_email}}"
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Telefon: {{traeger_telefon}}"
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Institutionskennzeichen (IK): {{traeger_ik}}"
+    }
+   ],
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Datenschutzbeauftragter: {{traeger_datenschutzbeauftragter}}"
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "2. Wofür wir Ihre Daten verarbeiten",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Durchführung des Beratungsbesuchs nach § 37 Abs. 3 SGB XI: Beratung der pflegebedürftigen Person und der Pflegeperson, Einschätzung der häuslichen Pflegesituation, Empfehlungen."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Erstellung des Nachweises über den Beratungsbesuch auf dem einheitlichen Formular und dessen Übermittlung an Ihre Pflegekasse."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Abrechnung der Vergütung des Beratungsbesuchs mit Ihrer Pflegekasse (elektronisches Verfahren nach § 105 SGB XI)."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Terminvereinbarung, Dokumentation und Qualitätssicherung der Beratung."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Erfüllung gesetzlicher Aufbewahrungs- und Nachweispflichten."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Ihre Daten werden nur für die Beratung verwendet – nicht zu Werbezwecken und nicht für andere Leistungen unseres Unternehmens, solange Sie diese nicht gesondert beauftragen."
+    }
+   ],
+   "sb": 3.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "3. Welche Daten wir verarbeiten",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Stammdaten: Name, Anschrift, Geburtsdatum, Kontaktdaten; ggf. Name der gesetzlichen Vertretung."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Versicherungsdaten: Pflegekasse, Versichertennummer, Pflegegrad."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Gesundheitsdaten (besondere Kategorien nach Art. 9 DSGVO): Angaben zur Pflegesituation, Einschätzungen, Empfehlungen und Maßnahmen aus dem Beratungsbesuch."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Angaben zu beteiligten Pflegepersonen, soweit für die Beratung erforderlich."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Unterschriften auf dem Nachweis."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "4. Rechtsgrundlagen",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Durchführung, Nachweis und Abrechnung des Beratungsbesuchs: Art. 6 Abs. 1 lit. c und Art. 9 Abs. 2 lit. h DSGVO in Verbindung mit § 37 SGB XI und § 105 SGB XI."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Übermittlung der Erkenntnisse und Empfehlungen aus dem Beratungsbesuch an die Pflegekasse: nur mit Ihrer Einwilligung (Art. 6 Abs. 1 lit. a, Art. 9 Abs. 2 lit. a DSGVO), die Sie auf dem Nachweisformular erteilen oder verweigern können. Die Einwilligung ist freiwillig und kann jederzeit für die Zukunft widerrufen werden."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Aufbewahrung von Abrechnungsunterlagen: Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit § 147 AO und § 257 HGB."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "5. Wer Ihre Daten erhält",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Ihre zuständige Pflegekasse: den Nachweis über den Beratungsbesuch; Empfehlungen nur mit Ihrer Einwilligung."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Ihre Pflegekasse bzw. deren Abrechnungs- und Datenannahmestelle: die Abrechnungsdaten."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Dienstleister, die wir als Auftragsverarbeiter nach Art. 28 DSGVO vertraglich verpflichtet haben: {{auftragsverarbeiter}}"
+    }
+   ],
+   "li": 14.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "•  Eine Übermittlung in Länder außerhalb der EU/des EWR findet nur statt, wenn dies oben ausdrücklich genannt ist. Sonstige Dritte erhalten Ihre Daten nicht."
+    }
+   ],
+   "sa": 2.0,
+   "li": 14.0,
+   "fi": -9.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "6. Wie lange wir Ihre Daten speichern",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Die Beratungsdokumentation bewahren wir auf: {{aufbewahrung_dokumentation}}."
+    }
+   ],
+   "sa": 2.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Abrechnungsunterlagen bewahren wir entsprechend den steuer- und handelsrechtlichen Fristen auf (bis zu 10 Jahre). Danach werden die Daten gelöscht."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "7. Ihre Rechte",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Sie haben das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21 DSGVO) sowie auf Widerruf einer Einwilligung mit Wirkung für die Zukunft (Art. 7 Abs. 3 DSGVO). Sie können sich bei einer Datenschutz-Aufsichtsbehörde beschweren, z. B. bei der Landesbeauftragten für Datenschutz und Informationsfreiheit Nordrhein-Westfalen."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "8. Müssen Sie Ihre Daten angeben?",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Ohne die unter Nr. 3 genannten Daten können wir den Beratungsbesuch nicht durchführen, nachweisen und abrechnen. Beziehen Sie Pflegegeld, sind Beratungsbesuche nach § 37 Abs. 3 SGB XI in regelmäßigen Abständen abzurufen; ein fehlender Nachweis kann nach § 37 Abs. 6 SGB XI zur Kürzung oder Entziehung des Pflegegeldes führen. Sie sind frei in der Wahl der Beratungsstelle."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "9. Automatisierte Entscheidungen",
+     "b": 1,
+     "s": 11.0
+    }
+   ],
+   "sb": 8.0,
+   "sa": 3.0,
+   "kn": 1
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Eine automatisierte Entscheidungsfindung einschließlich Profiling nach Art. 22 DSGVO findet nicht statt."
+    }
+   ]
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "Ausgehändigt am: "
+    }
+   ],
+   "sb": 10.0,
+   "sa": 0.0
+  },
+  {
+   "t": "p",
+   "runs": [
+    {
+     "x": "{{vertrag_ort}}, {{vertrag_datum}}"
+    }
+   ]
+  }
+ ],
+ "id": "datenschutz",
+ "titel": "Datenschutzinformation Beratungsbesuch",
+ "quelle": "UG_06_Datenschutzinformation_Beratung.docx"
+}
