@@ -1,0 +1,558 @@
+{
+  "origin": "widgets",
+  "pages": [
+    {
+      "page": 0,
+      "items": [
+        {
+          "id": "bn_0_besuch_videokonferenz",
+          "type": "checkbox",
+          "key": "besuch_videokonferenz",
+          "x": 70.06,
+          "y": 438.86,
+          "w": 12.12,
+          "h": 12.12,
+          "style": "cross"
+        },
+        {
+          "id": "bn_0_pflege_kvnr",
+          "type": "comb",
+          "key": "pflege_kvnr",
+          "x": 64.5,
+          "y": 157.51,
+          "w": 250.0,
+          "h": 14.4,
+          "size": 9,
+          "count": 16
+        },
+        {
+          "id": "bn_0_bn_nachname",
+          "type": "comb",
+          "key": "bn_nachname",
+          "x": 64.42,
+          "y": 194.36,
+          "w": 447.69,
+          "h": 15.7,
+          "size": 9,
+          "count": 29
+        },
+        {
+          "id": "bn_0_bn_vorname",
+          "type": "comb",
+          "key": "bn_vorname",
+          "x": 64.42,
+          "y": 226.41,
+          "w": 447.69,
+          "h": 14.39,
+          "size": 9,
+          "count": 29
+        },
+        {
+          "id": "bn_0_pflege_geburtsdatum",
+          "type": "comb",
+          "key": "bn_geburtsdatum",
+          "x": 64.4,
+          "y": 260.34,
+          "w": 125.0,
+          "h": 14.82,
+          "size": 9,
+          "count": 8
+        },
+        {
+          "id": "bn_0_bn_strasse",
+          "type": "comb",
+          "key": "bn_strasse",
+          "x": 64.39,
+          "y": 296.99,
+          "w": 447.69,
+          "h": 14.17,
+          "size": 9,
+          "count": 29
+        },
+        {
+          "id": "bn_0_bn_plz",
+          "type": "comb",
+          "key": "bn_plz",
+          "x": 64.47,
+          "y": 327.78,
+          "w": 76.88,
+          "h": 13.52,
+          "size": 9,
+          "count": 5
+        },
+        {
+          "id": "bn_0_bn_ort",
+          "type": "comb",
+          "key": "bn_ort",
+          "x": 162.71,
+          "y": 327.38,
+          "w": 355.06,
+          "h": 14.17,
+          "size": 9,
+          "count": 23
+        },
+        {
+          "id": "bn_0_besuch_datum",
+          "type": "comb",
+          "key": "besuch_datum_k",
+          "x": 297.62,
+          "y": 377.7,
+          "w": 124.75,
+          "h": 16.19,
+          "size": 9,
+          "count": 8
+        },
+        {
+          "id": "bn_0_besuch_von",
+          "type": "comb",
+          "key": "besuch_von_k",
+          "x": 137.23,
+          "y": 409.01,
+          "w": 60.5,
+          "h": 15.39,
+          "size": 9,
+          "count": 4
+        },
+        {
+          "id": "bn_0_besuch_bis",
+          "type": "comb",
+          "key": "besuch_bis_k",
+          "x": 241.18,
+          "y": 410.0,
+          "w": 60.25,
+          "h": 14.39,
+          "size": 9,
+          "count": 4
+        },
+        {
+          "id": "bn_0_einschaetzung_pflegeperson",
+          "type": "multiline",
+          "key": "einschaetzung_pflegeperson",
+          "x": 70.73,
+          "y": 555.52,
+          "w": 456.2,
+          "h": 76.93,
+          "size": 9,
+          "min_size": 7,
+          "line_pitch": 12.75,
+          "baseline_offset": 12.4,
+          "max_lines": 5
+        },
+        {
+          "id": "bn_0_einschaetzung_beratungsperson",
+          "type": "multiline",
+          "key": "einschaetzung_beratungsperson",
+          "x": 70.81,
+          "y": 654.26,
+          "w": 455.55,
+          "h": 79.78,
+          "size": 9,
+          "min_size": 7,
+          "line_pitch": 12.75,
+          "baseline_offset": 12.6,
+          "max_lines": 5
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "items": [
+        {
+          "id": "bn_1_mn_pflegesachleistungen",
+          "type": "checkbox",
+          "key": "mn_pflegesachleistungen",
+          "x": 404.12,
+          "y": 307.62,
+          "w": 8.62,
+          "h": 8.62,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_mn_kurzzeitpflege",
+          "type": "checkbox",
+          "key": "mn_kurzzeitpflege",
+          "x": 404.12,
+          "y": 326.44,
+          "w": 8.62,
+          "h": 8.62,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_mn_wohnraumanpassung",
+          "type": "checkbox",
+          "key": "mn_wohnraumanpassung",
+          "x": 404.12,
+          "y": 346.14,
+          "w": 8.62,
+          "h": 8.62,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_mn_freistellungsmoeglichkeiten",
+          "type": "checkbox",
+          "key": "mn_freistellungsmoeglichkeiten",
+          "x": 404.04,
+          "y": 362.4,
+          "w": 8.62,
+          "h": 8.62,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_mn_weitere_massnahmen",
+          "type": "checkbox",
+          "key": "mn_weitere_massnahmen",
+          "x": 71.81,
+          "y": 400.74,
+          "w": 9.38,
+          "h": 9.38,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_mn_unterstuetzung_alltag",
+          "type": "checkbox",
+          "key": "mn_unterstuetzung_alltag",
+          "x": 206.28,
+          "y": 326.45,
+          "w": 9.38,
+          "h": 9.38,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_mn_pflege_hilfsmittel",
+          "type": "checkbox",
+          "key": "mn_pflege_hilfsmittel",
+          "x": 206.28,
+          "y": 346.24,
+          "w": 9.12,
+          "h": 9.12,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_mn_erneute_pflegebegutachtung",
+          "type": "checkbox",
+          "key": "mn_erneute_pflegebegutachtung",
+          "x": 206.28,
+          "y": 365.84,
+          "w": 9.12,
+          "h": 9.12,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_mn_tages_nachtpflege",
+          "type": "checkbox",
+          "key": "mn_tages_nachtpflege",
+          "x": 206.28,
+          "y": 307.57,
+          "w": 9.38,
+          "h": 9.38,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_sichergestellt_ja",
+          "type": "checkbox",
+          "key": "sichergestellt_ja",
+          "x": 74.01,
+          "y": 95.82,
+          "w": 9.0,
+          "h": 9.0,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_sichergestellt_nein",
+          "type": "checkbox",
+          "key": "sichergestellt_nein",
+          "x": 201.21,
+          "y": 95.86,
+          "w": 9.0,
+          "h": 9.0,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_mn_pflegekurs",
+          "type": "checkbox",
+          "key": "mn_pflegekurs",
+          "x": 71.87,
+          "y": 307.51,
+          "w": 9.38,
+          "h": 9.38,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_mn_kombinationsleistung",
+          "type": "checkbox",
+          "key": "mn_kombinationsleistung",
+          "x": 71.81,
+          "y": 326.42,
+          "w": 9.38,
+          "h": 9.38,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_mn_verhinderungspflege",
+          "type": "checkbox",
+          "key": "mn_verhinderungspflege",
+          "x": 71.81,
+          "y": 346.14,
+          "w": 9.38,
+          "h": 9.38,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_massnahmen_keine",
+          "type": "checkbox",
+          "key": "massnahmen_keine",
+          "x": 71.8,
+          "y": 261.48,
+          "w": 8.0,
+          "h": 8.0,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_massnahmen_ja",
+          "type": "checkbox",
+          "key": "massnahmen_ja",
+          "x": 71.3,
+          "y": 286.29,
+          "w": 9.6,
+          "h": 9.6,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_sichergestellt_grund",
+          "type": "multiline",
+          "key": "sichergestellt_grund",
+          "x": 70.04,
+          "y": 131.67,
+          "w": 454.9,
+          "h": 68.94,
+          "size": 9,
+          "min_size": 7,
+          "line_pitch": 12.75,
+          "baseline_offset": 12.4,
+          "max_lines": 5
+        },
+        {
+          "id": "bn_1_massnahmen_erlaeuterung",
+          "type": "multiline",
+          "key": "massnahmen_erlaeuterung",
+          "x": 68.54,
+          "y": 421.09,
+          "w": 456.05,
+          "h": 114.6,
+          "size": 9,
+          "min_size": 7,
+          "line_pitch": 12.75,
+          "baseline_offset": 13.2,
+          "max_lines": 8
+        },
+        {
+          "id": "bn_1_mn_rehabilitationsleistungen",
+          "type": "checkbox",
+          "key": "mn_rehabilitationsleistungen",
+          "x": 71.77,
+          "y": 365.78,
+          "w": 9.38,
+          "h": 9.38,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_beratung_7a_angezeigt",
+          "type": "checkbox",
+          "key": "beratung_7a_angezeigt",
+          "x": 82.66,
+          "y": 551.64,
+          "w": 9.12,
+          "h": 9.12,
+          "style": "cross"
+        },
+        {
+          "id": "bn_1_wunsch_7a",
+          "type": "checkbox",
+          "key": "wunsch_7a",
+          "x": 78.04,
+          "y": 646.52,
+          "w": 9.38,
+          "h": 9.38,
+          "style": "cross"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "items": [
+        {
+          "id": "bn_2_einwilligung_inaugenschein",
+          "type": "checkbox",
+          "key": "einwilligung_inaugenschein",
+          "x": 71.86,
+          "y": 757.1,
+          "w": 9.38,
+          "h": 9.38,
+          "style": "cross"
+        },
+        {
+          "id": "bn_2_einwilligung_ziffer3",
+          "type": "checkbox",
+          "key": "einwilligung_ziffer3",
+          "x": 71.78,
+          "y": 558.76,
+          "w": 9.38,
+          "h": 9.38,
+          "style": "cross"
+        },
+        {
+          "id": "bn_2_einwilligung_ziffer4",
+          "type": "checkbox",
+          "key": "einwilligung_ziffer4",
+          "x": 71.78,
+          "y": 600.92,
+          "w": 9.38,
+          "h": 9.38,
+          "style": "cross"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "items": [
+        {
+          "id": "bn_3_ort_datum_unterschrift",
+          "type": "text",
+          "key": "ort_datum_unterschrift",
+          "x": 70.92,
+          "y": 204.72,
+          "w": 184.44,
+          "h": 28.8,
+          "size": 10
+        },
+        {
+          "id": "bn_3_sig_pflegebeduerftig_dataurl",
+          "type": "image",
+          "key": "sig_pflegebeduerftig_dataurl",
+          "x": 305.0,
+          "y": 186.0,
+          "w": 219.84,
+          "h": 47.5,
+          "fit": "contain"
+        },
+        {
+          "id": "bn_3_sig_beratungsperson_dataurl",
+          "type": "image",
+          "key": "sig_beratungsperson_dataurl",
+          "x": 70.9,
+          "y": 255.0,
+          "w": 184.44,
+          "h": 46.2,
+          "fit": "contain"
+        },
+        {
+          "id": "bn_3_beratungsperson_stempel_text",
+          "type": "multiline",
+          "key": "beratungsperson_stempel_text",
+          "x": 63.0,
+          "y": 393.48,
+          "w": 210.84,
+          "h": 28.8,
+          "size": 10
+        },
+        {
+          "id": "bn_3_einwilligung_7a_verarbeitung",
+          "type": "checkbox",
+          "key": "einwilligung_7a_verarbeitung",
+          "x": 71.78,
+          "y": 121.34,
+          "w": 9.38,
+          "h": 9.38,
+          "style": "cross"
+        },
+        {
+          "id": "bn_3_ik_nummer_beratung",
+          "type": "comb",
+          "key": "ik_nummer_beratung",
+          "x": 303.64,
+          "y": 398.83,
+          "w": 171.56,
+          "h": 23.45,
+          "size": 9,
+          "count": 9
+        },
+        {
+          "id": "bn_3_kasse_name",
+          "type": "comb",
+          "key": "kasse_name",
+          "x": 72.25,
+          "y": 543.79,
+          "w": 480.31,
+          "h": 16.8,
+          "size": 9,
+          "count": 29
+        },
+        {
+          "id": "bn_3_kasse_strasse",
+          "type": "comb",
+          "key": "kasse_strasse",
+          "x": 72.27,
+          "y": 616.58,
+          "w": 390.0,
+          "h": 14.36,
+          "size": 9,
+          "count": 24
+        },
+        {
+          "id": "bn_3_kasse_plz",
+          "type": "comb",
+          "key": "kasse_plz",
+          "x": 70.81,
+          "y": 649.82,
+          "w": 80.94,
+          "h": 20.03,
+          "size": 9,
+          "count": 5
+        },
+        {
+          "id": "bn_3_kasse_ort",
+          "type": "comb",
+          "key": "kasse_ort",
+          "x": 158.94,
+          "y": 650.15,
+          "w": 393.88,
+          "h": 18.36,
+          "size": 9,
+          "count": 23
+        },
+        {
+          "id": "bn_3_kasse_hausnummer",
+          "type": "comb",
+          "key": "kasse_hausnummer",
+          "x": 473.23,
+          "y": 615.79,
+          "w": 79.0,
+          "h": 15.19,
+          "size": 9,
+          "count": 4
+        },
+        {
+          "id": "kasse_name2",
+          "type": "comb",
+          "key": "kasse_name2",
+          "x": 72.29,
+          "y": 582.1,
+          "w": 480.31,
+          "h": 14.2,
+          "count": 29,
+          "size": 9
+        },
+        {
+          "type": "image",
+          "key": "sig_beratungsperson_stempel_dataurl",
+          "x": 158.0,
+          "y": 383.0,
+          "w": 114.0,
+          "h": 39.0,
+          "fit": "contain",
+          "id": "map_3_stempel_sig"
+        }
+      ]
+    }
+  ]
+}

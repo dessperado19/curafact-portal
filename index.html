@@ -42,6 +42,195 @@ button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
   <div id="tab-kunden"><div id="kdRoot"></div></div>
   <div id="tab-board" class="hidden"><div id="bdRoot"></div></div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<!--NW:START-->
+<script>
+/* Nachweis über einen Beratungsbesuch (§ 37 Abs. 3 SGB XI) im Browser erzeugen: Nachbau von scripts/fill_beratung_nachweis.py
+   + scripts/pdf_fill_common.py (Overlay auf den amtlichen Vordruck, Koordinaten aus configs/AOK/beratung_nachweis_mapping.json).
+   Benötigt pdf-lib (window.PDFLib). Aufruf: NW.erzeugen({template:ArrayBuffer, mapping:Object}, kunde, besuch, {ik:'…', kassen:[…], sigPersonen:{name:dataurl}}) -> Uint8Array */
+(function(root){
+'use strict';
+var PL=root.PDFLib||(typeof require!=='undefined'?require('pdf-lib'):null);
+var MASSNAHMEN_CODES=['pflegekurs','kombinationsleistung','verhinderungspflege','tages_nachtpflege','unterstuetzung_alltag','pflege_hilfsmittel','erneute_pflegebegutachtung','pflegesachleistungen','kurzzeitpflege','wohnraumanpassung','rehabilitationsleistungen','freistellungsmoeglichkeiten','weitere_massnahmen'];
+function pad(n,l){return String(n).padStart(l||2,'0')}
+function splitName(full){
+  full=String(full||'').trim();if(!full)return['',''];
+  if(full.indexOf(',')>=0){var i=full.indexOf(',');return[full.slice(i+1).trim(),full.slice(0,i).trim()]}
+  var j=full.indexOf(' ');if(j<0)return['',full];
+  return[full.slice(0,j).trim(),full.slice(j+1).trim()];
+}
+function dateDigits(v){
+  v=String(v||'').trim();var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v);if(m)return m[3]+m[2]+m[1];
+  m=/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(v);if(m)return pad(m[1])+pad(m[2])+m[3];
+  return v.replace(/\D/g,'').slice(0,8);
+}
+function timeDigits(v){
+  v=String(v||'').trim();var m=/^(\d{1,2})[:.](\d{2})$/.exec(v);if(m)return pad(m[1])+m[2];
+  return v.replace(/\D/g,'').slice(0,4);
+}
+function splitWords(text,firstLen){
+  text=String(text||'').trim();if(text.length<=firstLen)return[text,''];
+  var cut=text.lastIndexOf(' ',firstLen);if(cut<=0)cut=firstLen;
+  return[text.slice(0,cut).trim(),text.slice(cut).trim()];
+}
+function splitAddressFull(addr){
+  addr=String(addr||'').trim();if(!addr)return['','','',''];
+  var plz='',ort='',vorne=addr,m=/(\d{4,5})\s+(.+)$/.exec(addr);
+  if(m){plz=m[1];ort=m[2].trim();vorne=addr.slice(0,m.index).trim().replace(/,+\s*$/,'').trim()}
+  var h=/^(.*\S)\s+(\d+\s*[a-zA-Z]?)$/.exec(vorne);
+  if(h)return[h[1].trim(),h[2].trim(),plz,ort];
+  return[vorne,'',plz,ort];
+}
+function ortDatumVorschlag(customer,besuch){
+  var d=new Date(),datum=String(besuch.datum||'').trim()||pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear();
+  var ort='';
+  if(besuch.form==='videokonferenz')ort='Rheda-Wiedenbrück';
+  else{var a=String((customer||{}).pflege_anschrift||'').trim();var m=/\b\d{5}\s+(.+?)\s*$/.exec(a);ort=m?m[1].trim():(a.indexOf(',')>=0?a.slice(a.lastIndexOf(',')+1).trim():'')}
+  return ort?ort+', '+datum:datum;
+}
+function kasseEintrag(text,kassen){
+  var t=String(text||'').toLowerCase();
+  for(var i=0;i<(kassen||[]).length;i++){var k=kassen[i];if((k.match||[]).some(function(x){return t.indexOf(x)>=0}))return k}
+  return null;
+}
+function buildValues(customer,besuch,cfg){
+  cfg=cfg||{};customer=customer||{};besuch=besuch||{};
+  var v={};for(var k in customer)v[k]=customer[k];
+  var nm=splitName(customer.pflege_name);v.bn_vorname=nm[0];v.bn_nachname=nm[1];
+  v.bn_geburtsdatum=dateDigits(customer.pflege_geburtsdatum);
+  var a=splitAddressFull(customer.pflege_anschrift);
+  v.bn_strasse=(a[0]+' '+a[1]).trim();v.bn_plz=a[2];v.bn_ort=a[3];
+  v.besuch_datum=besuch.datum||'';v.besuch_von=besuch.uhrzeit_von||'';v.besuch_bis=besuch.uhrzeit_bis||'';
+  v.besuch_datum_k=dateDigits(besuch.datum||'');v.besuch_von_k=timeDigits(besuch.uhrzeit_von||'');v.besuch_bis_k=timeDigits(besuch.uhrzeit_bis||'');
+  v.besuch_videokonferenz=besuch.form==='videokonferenz';
+  v.einschaetzung_pflegeperson=besuch.einschaetzung_pflegeperson||'';v.einschaetzung_beratungsperson=besuch.einschaetzung_beratungsperson||'';
+  v.sichergestellt_ja=besuch.sichergestellt===true;v.sichergestellt_nein=besuch.sichergestellt===false;v.sichergestellt_grund=besuch.sichergestellt_grund||'';
+  var mn=(besuch.massnahmen||[]).slice();v.massnahmen_keine=!!besuch.massnahmen_keine;
+  var erl=String(besuch.massnahmen_erlaeuterung||'').trim();
+  if(erl&&!v.massnahmen_keine&&mn.indexOf('weitere_massnahmen')<0)mn.push('weitere_massnahmen');
+  v.massnahmen_ja=mn.length>0&&!v.massnahmen_keine;
+  MASSNAHMEN_CODES.forEach(function(c){v['mn_'+c]=mn.indexOf(c)>=0});
+  v.massnahmen_erlaeuterung=besuch.massnahmen_erlaeuterung||'';
+  v.beratung_7a_angezeigt=!!besuch.beratung_7a_angezeigt;v.wunsch_7a=!!besuch.wunsch_7a;
+  v.einwilligung_ziffer3=!!besuch.einwilligung_ziffer3;v.einwilligung_ziffer4=!!besuch.einwilligung_ziffer4;
+  v.einwilligung_inaugenschein=!!besuch.einwilligung_inaugenschein;v.einwilligung_7a_verarbeitung=!!besuch.einwilligung_7a_verarbeitung;
+  v.ort_datum_unterschrift=String(besuch.ort_datum_unterschrift||'').trim()||ortDatumVorschlag(customer,besuch);
+  v.sig_pflegebeduerftig_dataurl=besuch.sig_pflegebeduerftig_dataurl||'';
+  var bn=besuch.beratungsperson_name||'',bf=besuch.beratungsperson_funktion||'';
+  var sigBp=besuch.sig_beratungsperson_dataurl||'';
+  if(!sigBp&&cfg.sigPersonen){for(var n in cfg.sigPersonen){if(n.trim().toLowerCase()===String(bn).trim().toLowerCase()&&String(cfg.sigPersonen[n]).indexOf('data:image/')===0){sigBp=cfg.sigPersonen[n];break}}}
+  v.sig_beratungsperson_stempel_dataurl=sigBp;v.sig_beratungsperson_dataurl=besuch.form==='videokonferenz'?sigBp:'';
+  v.beratungsperson_stempel_text=(bn+(bf?'\n'+bf:'')).trim();
+  v.ik_nummer_beratung=cfg.ik||'';
+  var kt=besuch.kasse_name||customer.pflege_kasse||'',e=kasseEintrag(kt,cfg.kassen);
+  var ans=besuch.kasse_anschrift||customer.pflege_kasse_anschrift||(e&&e.anschrift)||'';
+  var ka=splitAddressFull(ans),voll=(e&&e.name)||kt,kn=splitWords(voll,29);
+  v.kasse_name=kn[0];v.kasse_name2=kn[1];
+  if(!v.kasse_name2&&e&&e.name2)v.kasse_name2=e.name2;
+  v.kasse_strasse=ka[0];v.kasse_hausnummer=ka[1];v.kasse_plz=ka[2];v.kasse_ort=ka[3];
+  return v;
+}
+
+/* ---------- Zeichnen (pdf-lib, Koordinaten wie reportlab: Ursprung links unten) ---------- */
+var ASC=0.718;  /* Helvetica-Ascent (AFM) */
+function safe(font,text){
+  var out='';
+  for(var i=0;i<text.length;i++){var ch=text[i];if(ch==='\n'||ch==='\r'){out+=ch;continue}try{font.encodeText(ch);out+=ch}catch(e){out+='?'}}
+  return out;
+}
+function wrap(font,text,w,size){
+  var lines=[];
+  String(text||'').replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').forEach(function(raw){
+    var cur='';
+    raw.split(' ').forEach(function(word){
+      var cand=cur?(cur+' '+word).trim():word;
+      if(!cur||font.widthOfTextAtSize(cand,size)<=w)cur=cand;else{lines.push(cur);cur=word}
+    });
+    lines.push(cur);
+  });
+  return lines;
+}
+function drawText(page,font,text,x,y,size,dy){page.drawText(safe(font,text),{x:x,y:y+ASC*size+(dy||0),size:size,font:font})}
+function drawComb(page,font,text,x,y,w,count,size,dy){
+  text=String(text||'');if(count<=0||!text)return;
+  var by=y+ASC*size+(dy||0);
+  if(text.length>count){
+    var s=size;while(s>6&&font.widthOfTextAtSize(safe(font,text),s)>w)s-=0.5;
+    page.drawText(safe(font,text),{x:x+1,y:y+ASC*s+(dy||0),size:s,font:font});return;
+  }
+  var bw=w/count;
+  for(var i=0;i<text.length;i++){
+    var ch=text[i];if(ch===' ')continue;ch=safe(font,ch);
+    page.drawText(ch,{x:x+i*bw+bw/2-font.widthOfTextAtSize(ch,size)/2,y:by,size:size,font:font});
+  }
+}
+function drawMultiline(page,font,text,x,y,w,h,it){
+  text=String(text||'');var size=Number(it.size||10);
+  if(it.line_pitch){
+    var pitch=Number(it.line_pitch),limit=parseInt(it.max_lines||Math.max(1,Math.floor(h/pitch)),10),cur=size,floor=Number(it.min_size||size);
+    var lines=wrap(font,safe(font,text),w,cur);
+    while(lines.length>limit&&cur-0.5>=floor){cur-=0.5;lines=wrap(font,safe(font,text),w,cur)}
+    if(lines.length>limit){
+      lines=lines.slice(0,limit);var last=lines[limit-1];
+      while(last&&font.widthOfTextAtSize(last+'...',cur)>w)last=last.slice(0,-1);
+      lines[limit-1]=last+'...';
+    }
+    var top=y+h,off=it.baseline_offset!=null?Number(it.baseline_offset):pitch;
+    lines.forEach(function(l,i){page.drawText(l,{x:x,y:top-off-i*pitch,size:cur,font:font})});
+    return;
+  }
+  var lh=size*1.25,mx=Math.max(1,Math.floor(h/lh)),ls=wrap(font,safe(font,text),w,size),tp=y+h;
+  ls.slice(0,mx).forEach(function(l,i){page.drawText(l,{x:x,y:tp-ASC*size-i*lh,size:size,font:font})});
+}
+function drawCross(page,x,y,w,h){
+  var m=Math.min(w,h)*0.2,th=Math.max(0.9,Math.min(w,h)*0.11),opt={thickness:th,color:PL.rgb(0,0,0),lineCap:PL.LineCapStyle.Round};
+  page.drawLine(Object.assign({start:{x:x+m,y:y+m},end:{x:x+w-m,y:y+h-m}},opt));
+  page.drawLine(Object.assign({start:{x:x+m,y:y+h-m},end:{x:x+w-m,y:y+m}},opt));
+}
+function b64ToBytes(b64){
+  if(typeof atob==='function'){var bin=atob(b64),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u}
+  return new Uint8Array(Buffer.from(b64,'base64'));
+}
+async function drawImage(doc,page,src,x,y,w,h,fit){
+  if(typeof src!=='string'||src.indexOf('data:')!==0)return;
+  var comma=src.indexOf(','),head=src.slice(0,comma),bytes=b64ToBytes(src.slice(comma+1));
+  var img=/image\/jpe?g/i.test(head)?await doc.embedJpg(bytes):await doc.embedPng(bytes);
+  var iw=img.width,ih=img.height;
+  if(fit==='contain'&&w&&h&&iw&&ih){var s=Math.min(w/iw,h/ih),nw=iw*s,nh=ih*s;page.drawImage(img,{x:x+(w-nw)/2,y:y,width:nw,height:nh});return}
+  page.drawImage(img,{x:x,y:y,width:w||120,height:h||40});
+}
+
+async function erzeugen(assets,customer,besuch,cfg){
+  var values=buildValues(customer,besuch,cfg);
+  var doc=await PL.PDFDocument.load(assets.template);
+  var font=await doc.embedFont(PL.StandardFonts.Helvetica);
+  var pages=doc.getPages(),mapping=assets.mapping,byPage={};
+  (mapping.pages||[]).forEach(function(p){byPage[parseInt(p.page,10)]=p.items||[]});
+  for(var pi=0;pi<pages.length;pi++){
+    var page=pages[pi],ph=page.getHeight(),items=byPage[pi]||[];
+    for(var ii=0;ii<items.length;ii++){
+      var it=items[ii],x=Number(it.x||0),w=Number(it.w||0),h=Number(it.h||0),y=ph-(Number(it.y||0)+h),dy=Number(it.dy||0),val=values[it.key];
+      if(it.type==='text'){if(val)drawText(page,font,String(val),x,y,parseInt(it.size||12,10),dy)}
+      else if(it.type==='comb'){if(val)drawComb(page,font,val,x,y,w,parseInt(it.count||1,10),Number(it.size||9),dy)}
+      else if(it.type==='multiline'){if(val)drawMultiline(page,font,val,x,y,w,h,it)}
+      else if(it.type==='checkbox'){if(val)drawCross(page,x,y,w,h)}
+      else if(it.type==='image'){if(val)await drawImage(doc,page,val,x,y,w,h,it.fit)}
+    }
+  }
+  return await doc.save();
+}
+var NW={buildValues:buildValues,erzeugen:erzeugen,splitAddressFull:splitAddressFull,
+  async laden(base){
+    base=base||'';
+    var t=await fetch(base+'assets/nachweis_vordruck.pdf').then(function(r){if(!r.ok)throw new Error('Vordruck nicht gefunden');return r.arrayBuffer()});
+    var m=await fetch(base+'assets/nachweis_mapping.json').then(function(r){if(!r.ok)throw new Error('Mapping nicht gefunden');return r.json()});
+    return {template:t,mapping:m};
+  }};
+root.NW=NW;
+if(typeof module!=='undefined'&&module.exports)module.exports=NW;
+})(typeof window!=='undefined'?window:globalThis);
+</script>
+<!--NW:END-->
 <!--BD:START-->
 <style>
 .bd{--bd-blue:var(--blue,#0E4A8B);--bd-border:var(--border,#dbe7f0);--bd-muted:var(--muted,#66788a);--bd-text:var(--text,#16324f);--bd-cyan:var(--cyan,#20C6D4);--bd-bg:var(--bg,#f5f8fb);color:var(--bd-text);font-size:14px}
@@ -663,12 +852,14 @@ window.BD=BD;
 .kdX{border:0;background:transparent;color:var(--k-muted);cursor:pointer;font-size:16px;padding:0 4px}.kdX:hover{color:#b91c1c}
 .kdFile{display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #eef3f7}.kdFile a{flex:1;color:var(--k-blue);font-weight:700;cursor:pointer;word-break:break-all}
 .kdLog{font-size:12px;color:var(--k-muted)}
+.kdFaellig{background:#fff;border:1px solid var(--k-border);border-radius:14px;padding:12px 14px;margin-bottom:14px}.kdFaellig h4{margin:0 0 8px;color:var(--k-blue)}.kdFaellig .it{display:flex;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid #eef3f7;cursor:pointer}.kdFaellig .it:last-child{border-bottom:0}.kdFaellig .it b{flex:1}
+.kdBes{border:1px solid var(--k-border);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:#fbfdff}.kdBes .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.kdBes label{margin-bottom:2px}
 .kdSig{display:block;max-height:90px;max-width:100%;background:#fff;border:1px dashed var(--k-border);border-radius:10px;padding:6px}
 .kdRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .kdToast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0b457f;color:#fff;border-radius:12px;padding:10px 16px;z-index:100001;font-weight:700;max-width:90vw}.kdToast.err{background:#b91c1c}
 .kdProg{height:10px;background:#e3edf4;border-radius:99px;overflow:hidden;margin:10px 0}.kdProg i{display:block;height:100%;background:var(--k-blue);width:0}
 .kdBox{background:#f2f6f9;border-radius:10px;padding:10px;font-size:12px;max-height:160px;overflow:auto;white-space:pre-wrap}
-@media(max-width:700px){.kdGrid{grid-template-columns:1fr}.kdPg{grid-template-columns:60px 1fr 1fr}.kdModalBg{padding:0}.kdModal{border-radius:0;min-height:100vh;max-width:none}.kdSearch{max-width:none;flex-basis:100%}.kdHideM{display:none}}
+@media(max-width:700px){.kdBes .grid{grid-template-columns:1fr}.kdGrid{grid-template-columns:1fr}.kdPg{grid-template-columns:60px 1fr 1fr}.kdModalBg{padding:0}.kdModal{border-radius:0;min-height:100vh;max-width:none}.kdSearch{max-width:none;flex-basis:100%}.kdHideM{display:none}}
 </style>
 <script>
 (function(){
@@ -712,7 +903,11 @@ function renderBar(){
 function render(){
   renderBar();
   var rows=S.list.filter(visible);
-  var h='<div style="overflow:auto"><table class="kdTable"><tr><th>Name</th><th>Kasse</th><th>PG</th><th>Nächster Termin</th><th class="kdHideM">Letzter Besuch</th><th class="kdHideM">Anschrift</th></tr>';
+  var heute0=new Date();heute0.setHours(0,0,0,0);var grenze=new Date(heute0.getTime()+21*86400000);
+  var faellig=S.list.filter(function(k){var s=k.summary||{},t=parseDe(s.naechster_termin);return k.aktiv&&s.beratung&&t&&t<=grenze}).sort(function(a,b){return parseDe(a.summary.naechster_termin)-parseDe(b.summary.naechster_termin)});
+  var fh='';
+  if(faellig.length){fh='<div class="kdFaellig"><h4>Fällige Beratungstermine ('+faellig.length+')</h4>'+faellig.slice(0,12).map(function(k){var t=parseDe(k.summary.naechster_termin);return'<div class="it" data-id="'+k.id+'"><b>'+esc(k.name)+'</b><span class="kdChip'+(t<heute0?' late':'')+'">'+esc(k.summary.naechster_termin)+(t<heute0?' – überfällig':'')+'</span></div>'}).join('')+(faellig.length>12?'<div class="kdLog" style="margin-top:6px">… und '+(faellig.length-12)+' weitere (Liste unten nach „Nächster Termin“ prüfen)</div>':'')+'</div>'}
+  var h=fh+'<div style="overflow:auto"><table class="kdTable"><tr><th>Name</th><th>Kasse</th><th>PG</th><th>Nächster Termin</th><th class="kdHideM">Letzter Besuch</th><th class="kdHideM">Anschrift</th></tr>';
   var heute=new Date();heute.setHours(0,0,0,0);
   rows.forEach(function(k){
     var s=k.summary||{},t=parseDe(s.naechster_termin);
@@ -758,9 +953,18 @@ function draw(){
   h+='</div></div>';
   h+='<div class="kdSec"><div class="kdSecHead"><h4>Angehörige / Bevollmächtigte Person</h4></div><div class="kdGrid">'+field('f_pname','Name',d.person_name)+field('f_pgeb','Geburtsdatum',d.person_geburtsdatum)+field('f_panschr','Anschrift',d.person_anschrift,{wide:1})+'</div></div>';
   var besuche=Array.isArray(d.beratungsbesuche)?d.beratungsbesuche:[];
-  h+='<div class="kdSec"><div class="kdSecHead"><h4>Beratungsbesuche ('+besuche.length+')</h4></div>';
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Beratungsbesuche ('+besuche.length+')</h4>'+(c.isNew?'':'<a class="kdBtn primary" style="text-decoration:none" href="besuch.html?kunde='+esc(c.id)+'">+ Neuer Beratungsbesuch</a>')+'</div>';
   if(!besuche.length)h+='<div class="kdLog">Noch keine Besuche erfasst.</div>';
-  besuche.slice().reverse().forEach(function(b){var st=b.status||{};h+='<div class="kdFile"><span style="flex:1"><b>'+esc(b.datum||'')+'</b> '+esc(b.uhrzeit_von||'')+(b.uhrzeit_bis?'–'+esc(b.uhrzeit_bis):'')+' · '+esc(b.beratungsperson_name||'')+'</span><span class="kdLog">'+(st.naechster_termin?'nächster Termin '+esc(st.naechster_termin):'')+'</span></div>'});
+  besuche.map(function(x,i){return[x,i]}).reverse().forEach(function(pair){
+    var x=pair[0],i=pair[1],st=x.status||{};
+    h+='<div class="kdBes" data-bi="'+i+'"><div class="kdRow"><b style="flex:1">'+esc(x.datum||'')+' '+esc(x.uhrzeit_von||'')+(x.uhrzeit_bis?'–'+esc(x.uhrzeit_bis):'')+' · '+esc(x.beratungsperson_name||'')+(x.form==='videokonferenz'?' · Video':'')+'</b>'+(c.isNew?'':'<button class="kdBtn" data-nw="'+i+'">Nachweis (PDF) erstellen</button>')+'</div>'+
+      '<div class="grid"><div><label>Nächster Termin</label><input type="text" data-st="naechster_termin" value="'+esc(st.naechster_termin||'')+'" placeholder="TT.MM.JJJJ"></div>'+
+      '<div><label>An Kasse übermittelt am</label><input type="text" data-st="uebermittelt_am" value="'+esc(st.uebermittelt_am||'')+'" placeholder="TT.MM.JJJJ"></div>'+
+      '<div><label>Zahlungsstatus</label><select data-st="zahlungsstatus">'+['offen','abgerechnet','bezahlt'].map(function(o){return'<option'+((st.zahlungsstatus||'offen')===o?' selected':'')+'>'+o+'</option>'}).join('')+'</select></div>'+
+      '<div><label>Übermittlungsweg</label><input type="text" data-st="uebermittlungsweg" value="'+esc(st.uebermittlungsweg||'')+'" placeholder="Portal, Post, Mail …"></div>'+
+      '<div><label>Vorgangsnummer</label><input type="text" data-st="vorgangsnummer" value="'+esc(st.vorgangsnummer||'')+'"></div>'+
+      '<div><label>Vergütung (€)</label><input type="text" data-st="verguetung" value="'+esc(st.verguetung||'')+'"></div></div></div>';
+  });
   h+='</div>';
   if(d.pflege_sig_dataurl)h+='<div class="kdSec"><div class="kdSecHead"><h4>Unterschrift (Stammdaten)</h4></div><img class="kdSig" src="'+esc(d.pflege_sig_dataurl)+'" alt="Unterschrift"></div>';
   if(!c.isNew){
@@ -787,6 +991,11 @@ function collect(){
     p.stufe=Number(p.stufe)||p.stufe;pgs.push(p);
   });
   d.pflegegrade=pgs;
+  S.root.querySelectorAll('.kdBes').forEach(function(box){
+    var i=Number(box.dataset.bi),b=(d.beratungsbesuche||[])[i];if(!b)return;
+    b.status=b.status&&typeof b.status==='object'?b.status:{};
+    box.querySelectorAll('[data-st]').forEach(function(el){b.status[el.dataset.st]=el.value.trim()});
+  });
 }
 async function save(){
   collect();var c=S.cur;
@@ -817,20 +1026,42 @@ async function uploadFiles(files){
   var g=await call('kunden_get',{id:c.id});if(g.ok){c.dok=g.dokumente||[];draw()}
 }
 
+/* ---------- Nachweis (PDF) erzeugen und in der Akte ablegen ---------- */
+function bytesToB64(u8){var s='';for(var i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
+async function nachweisFuer(i){
+  var c=S.cur,b=(c.data.beratungsbesuche||[])[i];if(!b)return;
+  if(!window.NW||!window.PDFLib){msg('PDF-Baustein nicht geladen (Internetverbindung prüfen).',true);return}
+  collect();
+  var cf=await call('app_config_get');var cfg=(cf.ok&&cf.config)||{};
+  msg('Nachweis wird erstellt …');
+  try{
+    var assets=await NW.laden('');
+    var bytes=await NW.erzeugen(assets,c.data,b,{ik:cfg.ik||'',kassen:cfg.kassen||[],sigPersonen:cfg.unterschriften||{}});
+    var fn='Nachweis_'+String(b.datum||'Besuch').replace(/[^\w.-]/g,'_')+'.pdf';
+    var up=await call('kunden_dok_add',{kunde_id:c.id,art:'nachweis',titel:'Nachweis '+(b.datum||''),file_name:fn,content_type:'application/pdf',file_b64:bytesToB64(bytes)});
+    if(!up.ok){msg(up.message||'Ablegen fehlgeschlagen.',true);return}
+    window.open(URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),'_blank');
+    var g=await call('kunden_get',{id:c.id});if(g.ok){c.dok=g.dokumente||[];draw()}
+    msg('Nachweis erstellt und in der Akte abgelegt');
+  }catch(e){msg('Nachweis konnte nicht erstellt werden: '+(e&&e.message||e),true)}
+}
+
 /* ---------- Import aus Studio (Admin) ---------- */
 var KEEP=['pflege_name','pflege_anschrift','pflege_kvnr','pflege_kasse','pflege_geburtsdatum','pflege_sig_dataurl','person_name','person_anschrift','person_geburtsdatum','person_kvnr','person_sig_dataurl','pflegegrade','pflegeberatung_kunde','beratungsbesuche','beratung_kalender','leistungsbeziehungen'];
 function slim(d){var o={};KEEP.forEach(function(k){if(d[k]!==undefined&&d[k]!==null&&d[k]!=='')o[k]=d[k]});return o}
 async function runImport(){
   var host=$('#kdModalHost');
-  host.innerHTML='<div class="kdModalBg"><div class="kdModal small"><h3>Import aus Studio</h3><p style="color:var(--k-muted)">Wählen Sie die vorbereitete Datei „Curafact_Kundenimport_Beratung.json“ (oder einzelne Kunden-JSONs aus Studio). Aus Studio-Dateien werden nur die Felder für die Pflegeberatung übernommen. Bestehende Namen werden übersprungen.</p><input type="file" id="kdImpFile" accept=".json,application/json" multiple><div id="kdImpOut"></div><div class="kdRow" style="justify-content:flex-end;margin-top:14px"><button class="kdBtn" id="kdImpClose">Schließen</button></div></div></div>';
+  host.innerHTML='<div class="kdModalBg"><div class="kdModal small"><h3>Import aus Studio</h3><p style="color:var(--k-muted)">Wählen Sie „Curafact_Kundenimport_Beratung.json“ (Kunden) und/oder „Curafact_Konfig_Import.json“ (Beratungspersonen, Textbausteine, Kassen, Unterschriften) – beide Dateien auf einmal geht auch. Aus Studio-Dateien werden nur die Felder für die Pflegeberatung übernommen. Bestehende Namen werden übersprungen.</p><input type="file" id="kdImpFile" accept=".json,application/json" multiple><div id="kdImpOut"></div><div class="kdRow" style="justify-content:flex-end;margin-top:14px"><button class="kdBtn" id="kdImpClose">Schließen</button></div></div></div>';
   $('#kdImpClose',host).onclick=function(){host.innerHTML='';load().then(render)};
   $('#kdImpFile',host).onchange=async function(e){
     var out=$('#kdImpOut',host);var items=[];
     for(var i=0;i<e.target.files.length;i++){
-      try{var j=JSON.parse(await e.target.files[i].text());if(Array.isArray(j))j.forEach(function(x){items.push(slim(x))});else items.push(slim(j))}catch(err){out.innerHTML+='<div class="kdLog">'+esc(e.target.files[i].name)+': keine gültige JSON-Datei</div>'}
+      try{var j=JSON.parse(await e.target.files[i].text());
+        if(!Array.isArray(j)&&(j.textbausteine||j.personen||j.kassen)){var cr=await call('app_config_import',{config:j});out.innerHTML+='<div class="kdLog">'+esc(e.target.files[i].name)+': Konfiguration '+(cr.ok?'übernommen ('+cr.saved+' Bereiche)':'FEHLER: '+esc(cr.message||''))+'</div>';continue}
+        if(Array.isArray(j))j.forEach(function(x){items.push(slim(x))});else items.push(slim(j))}catch(err){out.innerHTML+='<div class="kdLog">'+esc(e.target.files[i].name)+': keine gültige JSON-Datei</div>'}
     }
     items=items.filter(function(x){return x.pflege_name});
-    if(!items.length){out.innerHTML+='<div class="kdLog">Keine Kunden gefunden.</div>';return}
+    if(!items.length){return}
     var imp=0,skip=0,fail=[];
     for(var k=0;k<items.length;k+=10){
       out.innerHTML='<div class="kdProg"><i style="width:'+Math.round(k*100/items.length)+'%"></i></div><div class="kdLog">'+k+' von '+items.length+' …</div>';
@@ -854,6 +1085,7 @@ function bind(){
       if((x=el.closest('[data-pgdel]'))){collect();S.cur.data.pflegegrade.splice(Number(x.dataset.pgdel),1);draw();return}
       if((x=el.closest('[data-dok]'))){var u=await call('kunden_dok_url',{id:x.dataset.dok});if(u.ok){if(H().openUrl)H().openUrl(u.url);else window.open(u.url,'_blank')}else msg(u.message,true);return}
       if((x=el.closest('[data-dokdel]'))){if(await dlg({title:'Dokument löschen?',ok:'Löschen',danger:true})){var r=await call('kunden_dok_delete',{id:x.dataset.dokdel});if(r.ok){var g=await call('kunden_get',{id:S.cur.id});if(g.ok){S.cur.dok=g.dokumente||[];draw()}}else msg(r.message,true)}return}
+      if((x=el.closest('[data-nw]'))){nachweisFuer(Number(x.dataset.nw));return}
       if(el.id==='kdAktiv'){var neu=!S.cur.aktiv;if(await dlg({title:neu?'Wieder aktivieren?':'Kunde deaktivieren?',text:neu?'':'Die Akte bleibt erhalten, erscheint aber nicht mehr unter „Aktive“.',ok:neu?'Aktivieren':'Deaktivieren',danger:!neu})){var r2=await call('kunden_set_aktiv',{id:S.cur.id,aktiv:neu});if(r2.ok){var i=S.list.findIndex(function(k){return k.id===S.cur.id});if(i>=0)S.list[i].aktiv=neu;closeKunde()}else msg(r2.message,true)}return}
       return;
     }
@@ -861,7 +1093,7 @@ function bind(){
     if(el.id==='kdImport'){runImport();return}
     if(el.id==='kdReload'){if(await load())render();return}
     if((x=el.closest('[data-filter]'))){S.filter=x.dataset.filter;render();return}
-    if((x=el.closest('tr.row'))){openKunde(x.dataset.id);return}
+    if((x=el.closest('tr.row,.kdFaellig .it'))){openKunde(x.dataset.id);return}
   });
   root.addEventListener('input',function(e){
     if(e.target.id==='kdQ'){S.q=e.target.value;clearTimeout(S.qt);S.qt=setTimeout(function(){var p=e.target.selectionStart;render();var q=$('#kdQ');q.focus();q.setSelectionRange(p,p)},200)}
