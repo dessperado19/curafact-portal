@@ -238,6 +238,7 @@ button{font-family:inherit;border-radius:12px}
   <p class="note">Die Angaben werden von der Beratungsperson in Studio geprüft, ergänzt und in den offiziellen Nachweis nach § 37 Abs. 3 SGB XI übernommen.</p>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <!--NW:START-->
 <script>
@@ -620,7 +621,37 @@ async function unterlage(id,ctx,base){
   var d=String(ctx.datum||'').replace(/[^\w.-]/g,'_');
   return {bytes:bytes,fileName:DATEINAMEN[id]+(d?'_'+d:'')+'.pdf',titel:(a.vorlage.titel||id)+(ctx.datum?' '+ctx.datum:''),art:id==='vollmacht'?'vollmacht':id};
 }
-var DOK={erzeugen:erzeugen,unterlage:unterlage,unterlagenWerte:unterlagenWerte,
+/* Mehrere PDFs zu einem Sammel-PDF zusammenfügen (Reihenfolge wie übergeben) */
+async function sammeln(liste){
+  var out=await PL.PDFDocument.create();
+  for(var i=0;i<liste.length;i++){
+    var d=await PL.PDFDocument.load(liste[i]);
+    var pages=await out.copyPages(d,d.getPageIndices());
+    pages.forEach(function(p){out.addPage(p)});
+  }
+  return await out.save();
+}
+/* Drucken: PDF in einem unsichtbaren Rahmen laden und den Druckdialog öffnen (fällt auf „öffnen“ zurück) */
+function drucken(bytes){
+  var url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+  try{
+    var f=document.createElement('iframe');
+    f.style.cssText='position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0';
+    f.onload=function(){try{f.contentWindow.focus();f.contentWindow.print()}catch(e){window.open(url,'_blank')}setTimeout(function(){try{f.remove()}catch(e){}},60000)};
+    f.src=url;document.body.appendChild(f);
+  }catch(e){window.open(url,'_blank')}
+}
+/* Teilen: Teilen-Menü des Geräts (iPhone/iPad/Mac: Mail, Nachrichten, AirDrop, Drucken …); sonst Datei speichern */
+async function teilen(bytes,name,titel){
+  var file=new File([bytes],name,{type:'application/pdf'});
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:titel||name});return 'geteilt'}
+  }catch(e){if(e&&e.name==='AbortError')return 'abgebrochen'}
+  var url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},1000);
+  return 'gespeichert';
+}
+var ART_RANG={datenschutz:1,vereinbarung:2,vollmacht:3,nachweis:4,vertrag:5,sonstiges:6};
+var DOK={erzeugen:erzeugen,unterlage:unterlage,unterlagenWerte:unterlagenWerte,sammeln:sammeln,drucken:drucken,teilen:teilen,ART_RANG:ART_RANG,
   async laden(base,id){
     base=base||'';
     var v=await fetch(base+'assets/dokumente/'+id+'.json').then(function(r){if(!r.ok)throw new Error('Vorlage „'+id+'“ nicht gefunden');return r.json()});
@@ -637,6 +668,7 @@ var LOCAL=/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 var API=LOCAL?(location.protocol+'//'+location.hostname+':8799'):'https://vdqumlxjmgqrmwlxqwre.supabase.co/functions/v1/studio-api';
 var params=new URLSearchParams(location.search);
 var KUNDE=params.get('kunde')||'';
+var EDIT_INDEX=(params.get('index')!==null&&params.get('index')!=='')?Number(params.get('index')):null;
 var SESSION=KUNDE;   /* ohne Kunde kein Absenden */
 var LABEL=params.get('l')||'';
 var KEY='';
@@ -1015,6 +1047,8 @@ function setV(id,v){var el=$(id);if(el&&v!=null&&v!=='')el.value=v}
     konfigPruefen(cfg);
     terminVorschlag();
     $('pageSub').textContent='Beratungsbesuch für '+(c.pflege_name||'');
+    if(EDIT_INDEX!==null&&(c.beratungsbesuche||[])[EDIT_INDEX])fuelleBesuch((c.beratungsbesuche||[])[EDIT_INDEX]);
+    wartendeFernunterschriften();
   };
   window.ladeSitzung();
 })();
@@ -1153,9 +1187,126 @@ async function sammleVertraege(){
   return {items:out};
 }
 
-/* ---------- Absenden: Besuch in der Kundenakte speichern, Nachweis erzeugen und ablegen ---------- */
+/* ---------- Unterschrift-Werkzeuge: drehen, Handy/Tablet holen (QR), Fernunterschrift per Link ---------- */
+function drehen(sigObj,dir){
+  var du=sigObj.getDataUrl();if(!du)return;
+  var img=new Image();
+  img.onload=function(){var c=document.createElement('canvas');c.width=img.height;c.height=img.width;var x=c.getContext('2d');x.translate(c.width/2,c.height/2);x.rotate(dir*Math.PI/2);x.drawImage(img,-img.width/2,-img.height/2);sigObj.setDataUrl(c.toDataURL('image/png'),'gedreht')};
+  img.src=du;
+}
+function neuerToken(){var b=crypto.getRandomValues(new Uint8Array(16)),s='';for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+var PENDING_KEY='cf_sig_pending', SIGOBJ={};
+function pendingLaden(){try{return JSON.parse(localStorage.getItem(PENDING_KEY)||'[]').filter(function(x){return Date.now()-x.ts<12*3600*1000})}catch(e){return[]}}
+function pendingSpeichern(l){try{localStorage.setItem(PENDING_KEY,JSON.stringify(l))}catch(e){}}
+function pendingEntfernen(token){pendingSpeichern(pendingLaden().filter(function(x){return x.token!==token}))}
+async function sigAbfragen(e){
+  var r=null;try{r=await post('signature_fetch',{token:e.token})}catch(err){return false}
+  if(!r)return false;
+  if(r.ok&&r.ready&&SIGOBJ[e.prefix]){SIGOBJ[e.prefix].setDataUrl('data:image/png;base64,'+r.png_b64,'Fernunterschrift eingegangen');pendingEntfernen(e.token);return true}
+  return false;
+}
+function wartendeFernunterschriften(){
+  pendingLaden().filter(function(x){return x.kunde===KUNDE}).forEach(function(e){
+    var t=setInterval(async function(){if(!TOKEN){return}if(await sigAbfragen(e)){clearInterval(t);var m=$('msg');if(m&&!m.textContent)m.textContent='Fernunterschrift eingegangen.'}},4000);
+  });
+}
+function sigModal(titel,html){
+  var o=document.getElementById('sigModal');if(o)o.remove();
+  o=document.createElement('div');o.id='sigModal';o.style.cssText='position:fixed;inset:0;background:rgba(15,63,122,.7);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px';
+  o.innerHTML='<div style="background:#fff;border-radius:16px;padding:22px;max-width:420px;width:100%;max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.35)"><h3 style="margin:0 0 10px;color:#0f3f7a">'+titel+'</h3>'+html+'</div>';
+  document.body.appendChild(o);return o;
+}
+async function fernunterschrift(prefix){
+  if(!TOKEN){zeigeLogin('Bitte anmelden.');return}
+  var token=neuerToken();
+  var label=prefix==='pflege'?'Unterschrift pflegebedürftige Person':'Unterschrift Beratungsperson';
+  var url=new URL('unterschrift?t='+encodeURIComponent(token)+'&l='+encodeURIComponent(label),location.href).href;
+  var qr=qrcode(0,'M');qr.addData(url);qr.make();
+  var o=sigModal(label,
+    '<p style="margin:0 0 10px;color:#556;font-size:14px">Mit der Kamera des iPhones/iPads scannen – oder den Link senden. Unterschrieben wird auf dem anderen Gerät, die Unterschrift erscheint hier automatisch.</p>'+
+    '<div style="text-align:center;margin:8px 0">'+qr.createImgTag(6,8)+'</div>'+
+    '<input id="sigLinkIn" type="text" readonly value="'+url+'" style="width:100%;padding:10px;border:1px solid #cdd8e4;border-radius:10px;font-size:12px">'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">'+
+    '<button type="button" class="fileBtnStyle" id="sigCopy">Link kopieren</button>'+
+    '<a class="fileBtnStyle" style="text-decoration:none;display:inline-block" href="mailto:?subject='+encodeURIComponent(label)+'&body='+encodeURIComponent('Bitte hier unterschreiben: '+url)+'">Per E-Mail</a>'+
+    '<a class="fileBtnStyle" style="text-decoration:none;display:inline-block" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent('Bitte hier unterschreiben: '+url)+'">WhatsApp</a>'+
+    '<a class="fileBtnStyle" style="text-decoration:none;display:inline-block" href="sms:?&body='+encodeURIComponent('Bitte hier unterschreiben: '+url)+'">SMS</a>'+
+    (navigator.share?'<button type="button" class="fileBtnStyle" id="sigShare">Teilen …</button>':'')+
+    '</div><div id="sigWait" style="color:#35506b;font-weight:700;margin:6px 0">Warte auf Unterschrift …</div>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="fileBtnStyle" id="sigClose">Schließen (weiter warten)</button><button type="button" class="fileBtnStyle" id="sigCancel">Abbrechen</button></div>');
+  var entry={token:token,prefix:prefix,kunde:KUNDE,ts:Date.now()};
+  var l=pendingLaden();l.push(entry);pendingSpeichern(l);
+  var timer=setInterval(async function(){
+    if(!TOKEN)return;
+    if(await sigAbfragen(entry)){clearInterval(timer);var m=document.getElementById('sigModal');if(m)m.remove()}
+  },3000);
+  document.getElementById('sigCopy').onclick=function(){var i=document.getElementById('sigLinkIn');i.select();try{navigator.clipboard.writeText(url)}catch(e){document.execCommand('copy')}this.textContent='Kopiert'};
+  var sh=document.getElementById('sigShare');if(sh)sh.onclick=function(){navigator.share({title:label,url:url}).catch(function(){})};
+  document.getElementById('sigClose').onclick=function(){document.getElementById('sigModal').remove()};
+  document.getElementById('sigCancel').onclick=function(){clearInterval(timer);pendingEntfernen(token);post('signature_cancel',{token:token});document.getElementById('sigModal').remove()};
+}
+function sigWerkzeuge(prefix,sigObj){
+  SIGOBJ[prefix]=sigObj;
+  var row=document.getElementById('sigfilebtn_'+prefix);if(!row)return;row=row.parentNode;
+  function btn(text,fn){var b=document.createElement('button');b.type='button';b.className='fileBtnStyle';b.textContent=text;b.onclick=fn;row.appendChild(b)}
+  btn('⟲ Links drehen',function(){drehen(sigObj,-1)});
+  btn('⟳ Rechts drehen',function(){drehen(sigObj,1)});
+  btn('Vom iPhone/iPad holen',function(){fernunterschrift(prefix)});
+  btn(prefix==='pflege'?'Fernunterschrift senden (Kunde nicht vor Ort)':'Fernunterschrift senden',function(){fernunterschrift(prefix)});
+}
+sigWerkzeuge('pflege',sigPflege);sigWerkzeuge('berater',sigBerater);
+
+/* ---------- Bestehenden Besuch bearbeiten: Formular aus der Akte füllen ---------- */
+function fuelleBesuch(b){
+  var iso=function(de){var m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(de||'');return m?m[3]+'-'+m[2]+'-'+m[1]:(de||'')};
+  var set=function(id,v){var el=$(id);if(el&&v!=null)el.value=v};
+  set('besuch_datum',iso(b.datum));set('besuch_von',b.uhrzeit_von||'');set('besuch_bis',b.uhrzeit_bis||'');$('besuch_dauer').value='';
+  if(b.form==='videokonferenz')$('form_video').checked=true;else $('form_haeuslich').checked=true;
+  set('einschaetzung_pflegeperson',b.einschaetzung_pflegeperson||'');set('einschaetzung_beratungsperson',b.einschaetzung_beratungsperson||'');
+  if(b.sichergestellt===true){$('sicher_ja').checked=true;$('sicher_ja').onchange()}
+  else if(b.sichergestellt===false){$('sicher_nein').checked=true;$('sicher_nein').onchange();set('sichergestellt_grund',b.sichergestellt_grund||'')}
+  $('massnahmen_keine').checked=!!b.massnahmen_keine;
+  MASSNAHMEN.forEach(function(m){var el=$('mn_'+m[0]);if(el)el.checked=(b.massnahmen||[]).indexOf(m[0])>=0});
+  set('massnahmen_erlaeuterung',b.massnahmen_erlaeuterung||'');
+  ['beratung_7a_angezeigt','wunsch_7a','einwilligung_ziffer3','einwilligung_ziffer4','einwilligung_inaugenschein','einwilligung_7a_verarbeitung','ausgehaendigt'].forEach(function(k){if($(k))$(k).checked=!!b[k]});
+  set('ort_datum_unterschrift',b.ort_datum_unterschrift||'');$('ort_datum_unterschrift').setAttribute('data-auto','0');
+  $('beratungsperson_name').value=b.beratungsperson_name||'';$('beratungsperson_funktion').value=b.beratungsperson_funktion||'';
+  buildPersonen(CFG.personen||[],CFG.funktionen||[]);
+  set('kasse_name',b.kasse_name||$('kasse_name').value);set('kasse_anschrift',b.kasse_anschrift||$('kasse_anschrift').value);
+  set('naechster_termin',(b.status&&b.status.naechster_termin)||'');$('naechster_termin').setAttribute('data-auto','0');
+  if(b.sig_pflegebeduerftig_dataurl)sigPflege.setDataUrl(b.sig_pflegebeduerftig_dataurl,'Unterschrift aus dem gespeicherten Besuch');
+  if(b.sig_beratungsperson_dataurl)sigBerater.setDataUrl(b.sig_beratungsperson_dataurl,'Unterschrift aus dem gespeicherten Besuch');
+  $('u_datenschutz').checked=false;$('u_vereinbarung').checked=false;if($('sigfuer_vereinb'))$('sigfuer_vereinb').checked=false;
+  $('submitBtn').textContent='Änderungen speichern und Nachweis neu erstellen';
+  $('pageSub').textContent='Besuch vom '+(b.datum||'')+' bearbeiten – '+((KUNDEN.data&&KUNDEN.data.pflege_name)||'');
+  updateCounters();
+}
+
+/* ---------- Absenden: Besuch in der Kundenakte speichern, Nachweis und Unterlagen erzeugen und ablegen ---------- */
 function deDatum(iso){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');return m?m[3]+'.'+m[2]+'.'+m[1]:(iso||'')}
 function bytesToB64(u8){var s='';for(var i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
+var ERGEBNIS=[];
+function ergebnisAnzeigen(parts,fehler){
+  parts.sort(function(a,b){return (DOK.ART_RANG[a.art]||9)-(DOK.ART_RANG[b.art]||9)});
+  ERGEBNIS=parts;
+  var btn=function(id,t,primary){return '<button type="button" id="'+id+'" class="fileBtnStyle" style="margin:0 6px 8px 0;'+(primary?'background:#0f3f7a;color:#fff':'')+'">'+t+'</button>'};
+  var h='<div style="color:#0b7b32;font-weight:800">Gespeichert. '+(parts.length>1?'Nachweis und Unterlagen liegen':'Der Nachweis liegt')+' in der Kundenakte.</div>';
+  if(fehler.length)h+='<div style="color:#b45309;font-weight:700;margin-top:6px">'+fehler.join('<br>').replace(/</g,'&lt;')+' – in der Kundenakte neu erstellen.</div>';
+  h+='<div style="margin-top:12px">'+btn('erAllesDruck','Alles drucken ('+parts.length+' Dokument'+(parts.length>1?'e':'')+')',true)+btn('erAllesTeilen','Alles teilen / senden')+btn('erAllesOeffnen','Sammel-PDF öffnen')+'</div><div>';
+  parts.forEach(function(p,i){h+='<div style="margin:2px 0"><b>'+p.titel.replace(/</g,'&lt;')+'</b> '+btn('erOeffnen'+i,'Öffnen')+btn('erDruck'+i,'Drucken')+btn('erTeilen'+i,'Teilen')+'</div>'});
+  h+='</div><div style="margin-top:8px"><a href="./#kunden" style="display:inline-block;padding:12px 16px;border-radius:10px;border:1px solid #cdd8e4;color:#0f3f7a;font-weight:800;text-decoration:none">Zurück zu Curafact</a></div>';
+  $('msg').innerHTML=h;
+  var sammelBytes=async function(){return await DOK.sammeln(ERGEBNIS.map(function(p){return p.bytes}))};
+  var sname='Beratungsunterlagen_'+((KUNDEN&&KUNDEN.data&&KUNDEN.data.pflege_name)||'Kunde').replace(/[^\wäöüÄÖÜß.-]+/g,'_')+'.pdf';
+  $('erAllesDruck').onclick=async function(){DOK.drucken(await sammelBytes())};
+  $('erAllesTeilen').onclick=async function(){await DOK.teilen(await sammelBytes(),sname,'Beratungsunterlagen')};
+  $('erAllesOeffnen').onclick=async function(){window.open(URL.createObjectURL(new Blob([await sammelBytes()],{type:'application/pdf'})),'_blank')};
+  parts.forEach(function(p,i){
+    $('erOeffnen'+i).onclick=function(){window.open(URL.createObjectURL(new Blob([p.bytes],{type:'application/pdf'})),'_blank')};
+    $('erDruck'+i).onclick=function(){DOK.drucken(p.bytes)};
+    $('erTeilen'+i).onclick=function(){DOK.teilen(p.bytes,p.name,p.titel)};
+  });
+}
 $('submitBtn').onclick=async function(){
   var msg=$('msg');
   if(!KUNDE){msg.textContent='Kein Kunde ausgewählt. Bitte den Besuch aus der Kundenakte starten.';return}
@@ -1170,6 +1321,7 @@ $('submitBtn').onclick=async function(){
   var sichergestellt=null;if($('sicher_ja').checked)sichergestellt=true;if($('sicher_nein').checked)sichergestellt=false;
   try{localStorage.setItem('cf_ber_name',$('beratungsperson_name').value);localStorage.setItem('cf_ber_funktion',$('beratungsperson_funktion').value)}catch(e){}
   var v=function(id){return $(id).value}, ck=function(id){return $(id).checked};
+  var termin=v('naechster_termin').trim();
   var besuch={
     datum:deDatum(v('besuch_datum')), uhrzeit_von:v('besuch_von'), uhrzeit_bis:v('besuch_bis'),
     form:video?'videokonferenz':'haeuslichkeit',
@@ -1184,40 +1336,38 @@ $('submitBtn').onclick=async function(){
     ausgehaendigt:ck('ausgehaendigt'),
     beratungsperson_name:v('beratungsperson_name'), beratungsperson_funktion:v('beratungsperson_funktion'),
     kasse_name:v('kasse_name'), kasse_anschrift:v('kasse_anschrift'),
-    status:{uebermittelt_am:'',uebermittlungsweg:'',abrechnung_veranlasst_am:'',vorgangsnummer:'',verguetung:'',zahlungsstatus:'offen',naechster_termin:v('naechster_termin').trim()}
+    status:EDIT_INDEX!==null?{naechster_termin:termin}:{uebermittelt_am:'',uebermittlungsweg:'',abrechnung_veranlasst_am:'',vorgangsnummer:'',verguetung:'',zahlungsstatus:'offen',naechster_termin:termin}
   };
   var kfelder={pflege_anschrift:v('pflege_anschrift'),pflege_geburtsdatum:deDatum(v('pflege_geburtsdatum')),pflege_kvnr:v('pflege_kvnr'),pflege_kasse:v('pflege_kasse')};
   $('submitBtn').disabled=true;msg.textContent='Wird gespeichert …';
-  var r=await post('kunden_besuch_save',{kunde_id:KUNDE,version:KUNDEN.version,besuch:besuch,kunde_felder:kfelder});
+  var r=await post('kunden_besuch_save',{kunde_id:KUNDE,version:KUNDEN.version,besuch:besuch,kunde_felder:kfelder,index:EDIT_INDEX});
   if(!r.ok){$('submitBtn').disabled=false;msg.textContent=(r.conflict?'Konflikt: ':'Fehler: ')+(r.message||'Besuch konnte nicht gespeichert werden.');return}
   KUNDEN.version=r.kunde.version;
   msg.textContent='Besuch gespeichert. Nachweis wird erstellt …';
+  var parts=[],fehler=[];
+  var cust=Object.assign({},KUNDEN.data,{pflege_name:v('pflege_name'),pflege_anschrift:kfelder.pflege_anschrift,pflege_geburtsdatum:kfelder.pflege_geburtsdatum,pflege_kvnr:kfelder.pflege_kvnr,pflege_kasse:kfelder.pflege_kasse});
   try{
     var assets=await NW.laden('');
-    var cust=Object.assign({},KUNDEN.data,{pflege_name:v('pflege_name'),pflege_anschrift:kfelder.pflege_anschrift,pflege_geburtsdatum:kfelder.pflege_geburtsdatum,pflege_kvnr:kfelder.pflege_kvnr,pflege_kasse:kfelder.pflege_kasse});
     var bytes=await NW.erzeugen(assets,cust,besuch,{ik:CFG.ik||'',kassen:CFG.kassen||[],sigPersonen:CFG.unterschriften||{}});
     var fn='Nachweis_'+(besuch.datum||'Besuch').replace(/[^\w.-]/g,'_')+'.pdf';
     var up=await post('kunden_dok_add',{kunde_id:KUNDE,art:'nachweis',titel:'Nachweis '+besuch.datum,file_name:fn,content_type:'application/pdf',file_b64:bytesToB64(bytes)});
     if(!up.ok)throw new Error(up.message||'Ablegen fehlgeschlagen');
-    var links=[{t:'Nachweis öffnen',u:URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}))}], fehler=[];
-    var ortTeil=(besuch.ort_datum_unterschrift||'').split(',')[0].trim();
-    var ctx={kunde:cust,cfg:CFG,ort:ortTeil,datum:besuch.datum,sigKunde:sigP};
-    for(var ui=0;ui<2;ui++){
-      var uid=ui===0?'datenschutz':'vereinbarung';
-      if(!$('u_'+uid).checked)continue;
-      try{
-        msg.textContent='Besuch gespeichert. '+(uid==='datenschutz'?'Datenschutzinformation':'Beratungsvereinbarung')+' wird erstellt …';
-        var u=await DOK.unterlage(uid,ctx,'');
-        var up2=await post('kunden_dok_add',{kunde_id:KUNDE,art:u.art,titel:u.titel,file_name:u.fileName,content_type:'application/pdf',file_b64:bytesToB64(u.bytes)});
-        if(!up2.ok)throw new Error(up2.message||'Ablegen fehlgeschlagen');
-        links.push({t:(uid==='datenschutz'?'Datenschutzinformation':'Beratungsvereinbarung')+' öffnen',u:URL.createObjectURL(new Blob([u.bytes],{type:'application/pdf'}))});
-      }catch(e2){fehler.push((uid==='datenschutz'?'Datenschutzinformation':'Beratungsvereinbarung')+': '+String(e2&&e2.message||e2))}
-    }
-    var linkHtml=links.map(function(l){return '<a href="'+l.u+'" target="_blank" rel="noopener" style="display:inline-block;margin:0 6px 8px 0;padding:12px 16px;border-radius:10px;background:#0f3f7a;color:#fff;font-weight:800;text-decoration:none">'+l.t+'</a>'}).join('');
-    msg.innerHTML='<div style="color:#0b7b32;font-weight:800">Gespeichert. Nachweis'+(links.length>1?' und Unterlagen':'')+' liegen in der Kundenakte.</div>'+(fehler.length?'<div style="color:#b45309;font-weight:700;margin-top:6px">'+fehler.join('<br>').replace(/</g,'&lt;')+' – in der Kundenakte neu erstellen.</div>':'')+'<div style="margin-top:10px">'+linkHtml+'<a href="./#kunden" style="display:inline-block;padding:12px 16px;border-radius:10px;border:1px solid #cdd8e4;color:#0f3f7a;font-weight:800;text-decoration:none">Zurück zu Curafact</a></div>';
-  }catch(e){
-    msg.innerHTML='<div style="color:#b45309;font-weight:700">Der Besuch ist gespeichert, aber der Nachweis konnte nicht erstellt werden: '+String(e&&e.message||e).replace(/</g,'&lt;')+'. In der Kundenakte kann er neu erstellt werden.</div><div style="margin-top:10px"><a href="./#kunden" style="display:inline-block;padding:12px 16px;border-radius:10px;border:1px solid #cdd8e4;color:#0f3f7a;font-weight:800;text-decoration:none">Zurück zu Curafact</a></div>';
+    parts.push({art:'nachweis',bytes:bytes,name:fn,titel:'Nachweis '+besuch.datum});
+  }catch(e){fehler.push('Nachweis: '+String(e&&e.message||e))}
+  var ortTeil=(besuch.ort_datum_unterschrift||'').split(',')[0].trim();
+  var ctx={kunde:cust,cfg:CFG,ort:ortTeil,datum:besuch.datum,sigKunde:sigP};
+  for(var ui=0;ui<2;ui++){
+    var uid=ui===0?'datenschutz':'vereinbarung', ut=uid==='datenschutz'?'Datenschutzinformation':'Beratungsvereinbarung';
+    if(!$('u_'+uid).checked)continue;
+    try{
+      msg.textContent='Besuch gespeichert. '+ut+' wird erstellt …';
+      var u=await DOK.unterlage(uid,ctx,'');
+      var up2=await post('kunden_dok_add',{kunde_id:KUNDE,art:u.art,titel:u.titel,file_name:u.fileName,content_type:'application/pdf',file_b64:bytesToB64(u.bytes)});
+      if(!up2.ok)throw new Error(up2.message||'Ablegen fehlgeschlagen');
+      parts.push({art:u.art,bytes:u.bytes,name:u.fileName,titel:u.titel});
+    }catch(e2){fehler.push(ut+': '+String(e2&&e2.message||e2))}
   }
+  ergebnisAnzeigen(parts,fehler);
 };
 </script>
 <div class="cffoot">Curafact · Persönlich. Fürsorglich. An Ihrer Seite.</div></body></html>

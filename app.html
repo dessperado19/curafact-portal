@@ -424,7 +424,37 @@ async function unterlage(id,ctx,base){
   var d=String(ctx.datum||'').replace(/[^\w.-]/g,'_');
   return {bytes:bytes,fileName:DATEINAMEN[id]+(d?'_'+d:'')+'.pdf',titel:(a.vorlage.titel||id)+(ctx.datum?' '+ctx.datum:''),art:id==='vollmacht'?'vollmacht':id};
 }
-var DOK={erzeugen:erzeugen,unterlage:unterlage,unterlagenWerte:unterlagenWerte,
+/* Mehrere PDFs zu einem Sammel-PDF zusammenfügen (Reihenfolge wie übergeben) */
+async function sammeln(liste){
+  var out=await PL.PDFDocument.create();
+  for(var i=0;i<liste.length;i++){
+    var d=await PL.PDFDocument.load(liste[i]);
+    var pages=await out.copyPages(d,d.getPageIndices());
+    pages.forEach(function(p){out.addPage(p)});
+  }
+  return await out.save();
+}
+/* Drucken: PDF in einem unsichtbaren Rahmen laden und den Druckdialog öffnen (fällt auf „öffnen“ zurück) */
+function drucken(bytes){
+  var url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+  try{
+    var f=document.createElement('iframe');
+    f.style.cssText='position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0';
+    f.onload=function(){try{f.contentWindow.focus();f.contentWindow.print()}catch(e){window.open(url,'_blank')}setTimeout(function(){try{f.remove()}catch(e){}},60000)};
+    f.src=url;document.body.appendChild(f);
+  }catch(e){window.open(url,'_blank')}
+}
+/* Teilen: Teilen-Menü des Geräts (iPhone/iPad/Mac: Mail, Nachrichten, AirDrop, Drucken …); sonst Datei speichern */
+async function teilen(bytes,name,titel){
+  var file=new File([bytes],name,{type:'application/pdf'});
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:titel||name});return 'geteilt'}
+  }catch(e){if(e&&e.name==='AbortError')return 'abgebrochen'}
+  var url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},1000);
+  return 'gespeichert';
+}
+var ART_RANG={datenschutz:1,vereinbarung:2,vollmacht:3,nachweis:4,vertrag:5,sonstiges:6};
+var DOK={erzeugen:erzeugen,unterlage:unterlage,unterlagenWerte:unterlagenWerte,sammeln:sammeln,drucken:drucken,teilen:teilen,ART_RANG:ART_RANG,
   async laden(base,id){
     base=base||'';
     var v=await fetch(base+'assets/dokumente/'+id+'.json').then(function(r){if(!r.ok)throw new Error('Vorlage „'+id+'“ nicht gefunden');return r.json()});
@@ -1057,6 +1087,7 @@ window.BD=BD;
 .kdX{border:0;background:transparent;color:var(--k-muted);cursor:pointer;font-size:16px;padding:0 4px}.kdX:hover{color:#b91c1c}
 .kdFile{display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #eef3f7}.kdFile a{flex:1;color:var(--k-blue);font-weight:700;cursor:pointer;word-break:break-all}
 .kdLog{font-size:12px;color:var(--k-muted)}
+.kdFile input[type=checkbox]{width:auto;margin:0}.kdFile .kdBtn{padding:4px 9px;font-size:12px}.kdNote{border-bottom:1px solid #eef3f7;padding:7px 0}.kdNote .w{font-size:12px;color:var(--k-muted)}.kdNote div.t{white-space:pre-wrap}.kdHint{background:#fff8e6;border:1px solid #f1d28a;border-radius:10px;padding:8px 10px;font-size:12px;margin-top:8px}.kdHint a{color:var(--k-blue);font-weight:700}
 .kdFaellig{background:#fff;border:1px solid var(--k-border);border-radius:14px;padding:12px 14px;margin-bottom:14px}.kdFaellig h4{margin:0 0 8px;color:var(--k-blue)}.kdFaellig .it{display:flex;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid #eef3f7;cursor:pointer}.kdFaellig .it:last-child{border-bottom:0}.kdFaellig .it b{flex:1}
 .kdBes{border:1px solid var(--k-border);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:#fbfdff}.kdBes .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.kdBes label{margin-bottom:2px}
 .kdSig{display:block;max-height:90px;max-width:100%;background:#fff;border:1px dashed var(--k-border);border-radius:10px;padding:6px}
@@ -1069,7 +1100,7 @@ window.BD=BD;
 <script>
 (function(){
 'use strict';
-var S={root:null,list:[],q:'',filter:'aktiv',loaded:false,cur:null,toastT:null};
+var S={root:null,list:[],q:'',filter:'aktiv',loaded:false,cur:null,toastT:null,cfg:null};
 var KASSEN=['AOK NordWest','AOK NW','Barmer','DAK','TK','KKH','Knappschaft','HanseMerkur','IKK classic','BKK','Techniker Krankenkasse'];
 var ARTEN={nachweis:'Nachweis',vereinbarung:'Beratungsvereinbarung',datenschutz:'Datenschutzinformation',vollmacht:'Vollmacht',vertrag:'Vertrag',sonstiges:'Sonstiges'};
 function H(){return window.BD_HOST||{}}
@@ -1135,8 +1166,17 @@ function dlg(o){
 async function openKunde(id){
   var r=await call('kunden_get',{id:id});
   if(!r.ok){msg(r.message||'Akte konnte nicht geladen werden.',true);return}
-  S.cur={id:r.kunde.id,version:r.kunde.version,aktiv:r.kunde.aktiv,data:JSON.parse(JSON.stringify(r.kunde.data||{})),dok:r.dokumente||[],isNew:false};
+  S.cur={id:r.kunde.id,version:r.kunde.version,aktiv:r.kunde.aktiv,data:JSON.parse(JSON.stringify(r.kunde.data||{})),dok:r.dokumente||[],isNew:false,sel:{},notizen:null,verlauf:null,taskId:r.kunde.board_task_id||r.board_task_id||null};
   draw();
+  if(!S.cfg)call('app_config_get').then(function(cf){if(cf.ok){S.cfg=cf.config||{};if(S.cur&&S.cur.id===r.kunde.id)draw()}});
+  ladeExtras(r.kunde.id);
+}
+async function ladeExtras(id){
+  var n=await call('kunden_notizen',{kunde_id:id}),v=await call('kunden_verlauf',{kunde_id:id});
+  if(!S.cur||S.cur.id!==id)return;
+  S.cur.notizen=n.ok?(n.notizen||[]):[];if(n.ok&&n.task_id)S.cur.taskId=n.task_id;
+  S.cur.verlauf=v.ok?(v.eintraege||[]):[];
+  collect();draw();
 }
 function newKunde(){
   S.cur={id:null,version:null,aktiv:true,data:{pflege_name:'',pflege_anschrift:'',pflege_kvnr:'',pflege_kasse:'',pflege_geburtsdatum:'',pflegegrade:[],pflegeberatung_kunde:true},dok:[],isNew:true};
@@ -1162,7 +1202,7 @@ function draw(){
   if(!besuche.length)h+='<div class="kdLog">Noch keine Besuche erfasst.</div>';
   besuche.map(function(x,i){return[x,i]}).reverse().forEach(function(pair){
     var x=pair[0],i=pair[1],st=x.status||{};
-    h+='<div class="kdBes" data-bi="'+i+'"><div class="kdRow"><b style="flex:1">'+esc(x.datum||'')+' '+esc(x.uhrzeit_von||'')+(x.uhrzeit_bis?'–'+esc(x.uhrzeit_bis):'')+' · '+esc(x.beratungsperson_name||'')+(x.form==='videokonferenz'?' · Video':'')+'</b>'+(c.isNew?'':'<button class="kdBtn" data-nw="'+i+'">Nachweis (PDF) erstellen</button>')+'</div>'+
+    h+='<div class="kdBes" data-bi="'+i+'"><div class="kdRow"><b style="flex:1">'+esc(x.datum||'')+' '+esc(x.uhrzeit_von||'')+(x.uhrzeit_bis?'–'+esc(x.uhrzeit_bis):'')+' · '+esc(x.beratungsperson_name||'')+(x.form==='videokonferenz'?' · Video':'')+'</b>'+(c.isNew?'':'<a class="kdBtn" style="text-decoration:none" href="besuch.html?kunde='+esc(c.id)+'&index='+i+'">Bearbeiten</a><button class="kdBtn" data-nw="'+i+'">Nachweis (PDF) erstellen</button><button class="kdBtn danger" data-besdel="'+i+'">Löschen</button>')+'</div>'+
       '<div class="grid"><div><label>Nächster Termin</label><input type="text" data-st="naechster_termin" value="'+esc(st.naechster_termin||'')+'" placeholder="TT.MM.JJJJ"></div>'+
       '<div><label>An Kasse übermittelt am</label><input type="text" data-st="uebermittelt_am" value="'+esc(st.uebermittelt_am||'')+'" placeholder="TT.MM.JJJJ"></div>'+
       '<div><label>Zahlungsstatus</label><select data-st="zahlungsstatus">'+['offen','abgerechnet','bezahlt'].map(function(o){return'<option'+((st.zahlungsstatus||'offen')===o?' selected':'')+'>'+o+'</option>'}).join('')+'</select></div>'+
@@ -1170,12 +1210,26 @@ function draw(){
       '<div><label>Vorgangsnummer</label><input type="text" data-st="vorgangsnummer" value="'+esc(st.vorgangsnummer||'')+'"></div>'+
       '<div><label>Vergütung (€)</label><input type="text" data-st="verguetung" value="'+esc(st.verguetung||'')+'"></div></div></div>';
   });
+  var ke=kasseEintrag(d.pflege_kasse);
+  if(ke&&(ke.hinweis||ke.url||ke.weg))h+='<div class="kdHint"><b>Versandweg '+esc(ke.name||d.pflege_kasse)+':</b> '+esc(ke.hinweis||'')+(ke.url?' <a href="'+esc(ke.url)+'" target="_blank" rel="noopener">Portal öffnen</a>':'')+(ke.anschrift?'<br>Postanschrift: '+esc(ke.anschrift):'')+'</div>';
   h+='</div>';
   if(d.pflege_sig_dataurl)h+='<div class="kdSec"><div class="kdSecHead"><h4>Unterschrift (Stammdaten)</h4></div><img class="kdSig" src="'+esc(d.pflege_sig_dataurl)+'" alt="Unterschrift"></div>';
   if(!c.isNew){
     h+='<div class="kdSec"><div class="kdSecHead"><h4>Dokumente</h4><div class="kdRow"><select id="docArt" style="width:auto">'+Object.keys(ARTEN).map(function(k){return'<option value="'+k+'">'+ARTEN[k]+'</option>'}).join('')+'</select><label class="kdBtn" style="cursor:pointer">+ Datei<input type="file" id="docFile" multiple style="display:none"></label></div></div><div class="kdRow" style="margin-bottom:8px"><button class="kdBtn" data-unt="datenschutz">Datenschutzinformation erstellen</button><button class="kdBtn" data-unt="vereinbarung">Beratungsvereinbarung erstellen</button>'+(H().isAdmin?'<button class="kdBtn" data-unt="vollmacht">Vollmacht Beratungsperson erstellen</button>':'')+'</div>';
-    c.dok.forEach(function(x){h+='<div class="kdFile"><span class="kdChip">'+esc(ARTEN[x.art]||x.art)+'</span><a data-dok="'+x.id+'">'+esc(x.file_name)+'</a><span class="kdLog">'+bytesFmt(x.size)+' · '+fmtTs(x.created_at)+'</span><button class="kdX" data-dokdel="'+x.id+'">×</button></div>'});
+    var nsel=c.dok.filter(function(x){return c.sel[x.id]}).length;
+    if(c.dok.length)h+='<div class="kdRow" style="margin:6px 0"><label class="k" style="display:flex;gap:5px;align-items:center;font-size:13px"><input type="checkbox" id="dokAll"'+(nsel===c.dok.length?' checked':'')+' style="width:auto"> alle</label><span class="kdLog">'+nsel+' ausgewählt</span><button class="kdBtn" data-dokact="sammel"'+(nsel?'':' disabled')+'>Sammel-PDF öffnen</button><button class="kdBtn" data-dokact="druck"'+(nsel?'':' disabled')+'>Auswahl drucken</button><button class="kdBtn" data-dokact="teilen"'+(nsel?'':' disabled')+'>Auswahl teilen</button></div>';
+    c.dok.forEach(function(x){h+='<div class="kdFile"><input type="checkbox" data-doksel="'+x.id+'"'+(c.sel[x.id]?' checked':'')+'><span class="kdChip">'+esc(ARTEN[x.art]||x.art)+'</span><a data-dok="'+x.id+'">'+esc(x.file_name)+'</a><span class="kdLog">'+bytesFmt(x.size)+' · '+fmtTs(x.created_at)+'</span>'+(isPdf(x)?'<button class="kdBtn" data-dokone="druck:'+x.id+'">Drucken</button><button class="kdBtn" data-dokone="teilen:'+x.id+'">Teilen</button>':'')+'<button class="kdX" data-dokdel="'+x.id+'">×</button></div>'});
     if(!c.dok.length)h+='<div class="kdLog">Noch keine Dokumente.</div>';
+    h+='</div>';
+    h+='<div class="kdSec"><div class="kdSecHead"><h4>Notizen</h4>'+(c.taskId?'<a class="kdBtn" style="text-decoration:none" href="./?task='+esc(c.taskId)+'" target="_blank" rel="noopener">Board-Aufgabe öffnen</a>':'')+'</div><div class="kdRow" style="align-items:flex-start"><textarea id="kdNoteTxt" rows="2" style="flex:1;min-width:200px" placeholder="Neue Notiz (z. B. Telefonat, Absprache, Hinweis) …">'+esc(c.noteDraft||'')+'</textarea><button class="kdBtn primary" id="kdNoteAdd">Notiz speichern</button></div>';
+    if(c.notizen===null)h+='<div class="kdLog">Lade Notizen …</div>';
+    else if(!c.notizen.length)h+='<div class="kdLog" style="margin-top:6px">Noch keine Notizen.</div>';
+    else c.notizen.forEach(function(n){h+='<div class="kdNote"><div class="w">'+esc(n.author_name||n.author||'')+' · '+fmtTs(n.created_at)+'</div><div class="t">'+esc(n.body||'')+'</div></div>'});
+    h+='</div>';
+    h+='<div class="kdSec"><div class="kdSecHead"><h4>Verlauf</h4></div>';
+    if(c.verlauf===null)h+='<div class="kdLog">Lade Verlauf …</div>';
+    else if(!c.verlauf.length)h+='<div class="kdLog">Noch keine Einträge.</div>';
+    else h+='<div class="kdBox">'+c.verlauf.map(function(v){return esc(fmtTs(v.created_at)+'  '+(v.display_name||'')+'  '+(ACT[v.action]||v.action)+(v.details?' – '+v.details:''))}).join('\n')+'</div>';
     h+='</div>';
     h+='<div class="kdRow" style="justify-content:space-between;margin-top:22px"><button class="kdBtn '+(c.aktiv?'danger':'')+'" id="kdAktiv">'+(c.aktiv?'Deaktivieren':'Wieder aktivieren')+'</button><span class="kdLog">Version '+esc(c.version)+'</span></div>';
   }
@@ -1190,6 +1244,7 @@ function collect(){
   d.pflege_name=v('f_name').trim();d.pflege_geburtsdatum=v('f_geb').trim();d.pflege_kvnr=v('f_kvnr').trim();d.pflege_kasse=v('f_kasse').trim();d.pflege_anschrift=v('f_anschr').trim();
   d.person_name=v('f_pname').trim();d.person_geburtsdatum=v('f_pgeb').trim();d.person_anschrift=v('f_panschr').trim();
   d.pflegeberatung_kunde=!!($('#f_ber')||{}).checked;
+  if($('#kdNoteTxt'))c.noteDraft=$('#kdNoteTxt').value;
   var pgs=[];
   S.root.querySelectorAll('.kdPg').forEach(function(row){
     var p={};row.querySelectorAll('[data-pg]').forEach(function(el){var k=el.dataset.pg;p[k]=el.type==='checkbox'?el.checked:el.value.trim()});
@@ -1229,6 +1284,43 @@ async function uploadFiles(files){
     if(!r.ok)msg(r.message||'Upload fehlgeschlagen.',true);
   }
   var g=await call('kunden_get',{id:c.id});if(g.ok){c.dok=g.dokumente||[];draw()}
+}
+
+/* ---------- Dokumente: Sammel-PDF, Drucken, Teilen ---------- */
+var ACT={kunde_angelegt:'Akte angelegt',kunde_gespeichert:'Akte gespeichert',beratungsbesuch_gespeichert:'Besuch gespeichert',beratungsbesuch_geloescht:'Besuch gelöscht',dokument_hochgeladen:'Dokument abgelegt',dokument_geloescht:'Dokument gelöscht',notiz_hinzugefuegt:'Notiz hinzugefügt',kunden_import:'Import'};
+function isPdf(x){return /pdf/i.test(x.content_type||'')||/\.pdf$/i.test(x.file_name||'')}
+function kasseEintrag(text){var t=String(text||'').toLowerCase(),ks=(S.cfg&&S.cfg.kassen)||[];if(!t)return null;for(var i=0;i<ks.length;i++){if((ks[i].match||[]).some(function(m){return t.indexOf(m)>=0}))return ks[i]}return null}
+function b64ToBytes(b64){var bin=atob(b64),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u}
+async function dokBytes(id){var r=await call('kunden_dok_get',{id:id});if(!r.ok)throw new Error(r.message||'Datei konnte nicht geladen werden');return {bytes:b64ToBytes(r.file_b64),name:r.file_name}}
+function selektierte(){var c=S.cur;return c.dok.filter(function(x){return c.sel[x.id]&&isPdf(x)}).sort(function(a,b){return (DOK.ART_RANG[a.art]||9)-(DOK.ART_RANG[b.art]||9)||String(a.created_at).localeCompare(String(b.created_at))})}
+async function dokAktion(act,ids){
+  if(!window.DOK||!window.PDFLib){msg('PDF-Baustein nicht geladen (Internetverbindung prüfen).',true);return}
+  var c=S.cur;
+  try{
+    msg('Dokumente werden geladen …');
+    var teile=[];for(var i=0;i<ids.length;i++)teile.push(await dokBytes(ids[i]));
+    if(!teile.length){msg('Keine PDF-Dokumente ausgewählt.',true);return}
+    var bytes=teile.length>1?await DOK.sammeln(teile.map(function(t){return t.bytes})):teile[0].bytes;
+    var name=teile.length>1?'Beratungsunterlagen_'+String(c.data.pflege_name||'Kunde').replace(/[^\wäöüÄÖÜß.-]+/g,'_')+'.pdf':teile[0].name;
+    if(act==='druck')DOK.drucken(bytes);
+    else if(act==='teilen')await DOK.teilen(bytes,name,name);
+    else window.open(URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),'_blank');
+    msg(teile.length>1?'Sammel-PDF mit '+teile.length+' Dokumenten bereit':'Dokument bereit');
+  }catch(e){msg('Fehler: '+(e&&e.message||e),true)}
+}
+async function besuchLoeschen(i){
+  var c=S.cur,b=(c.data.beratungsbesuche||[])[i];if(!b)return;
+  if(!await dlg({title:'Besuch vom '+(b.datum||'')+' löschen?',text:'Der Besuch wird aus der Akte entfernt. Bereits abgelegte PDF-Dokumente bleiben erhalten und können einzeln gelöscht werden.',ok:'Löschen',danger:true}))return;
+  var r=await call('kunden_besuch_delete',{kunde_id:c.id,index:i,version:c.version});
+  if(!r.ok){msg(r.message||'Löschen fehlgeschlagen.',true);return}
+  var k=S.list.findIndex(function(x){return x.id===c.id});if(k>=0){S.list[k].summary=r.kunde.summary;S.list[k].version=r.kunde.version}
+  msg('Besuch gelöscht');await openKunde(c.id);
+}
+async function notizSpeichern(){
+  var c=S.cur,t=($('#kdNoteTxt')||{}).value||'';t=t.trim();if(!t){msg('Bitte eine Notiz eintragen.',true);return}
+  var r=await call('kunden_notiz_add',{kunde_id:c.id,text:t});
+  if(!r.ok){msg(r.message||'Notiz konnte nicht gespeichert werden.',true);return}
+  collect();c.taskId=r.task_id||c.taskId;c.noteDraft='';c.notizen=[r.notiz].concat(c.notizen||[]);draw();msg('Notiz gespeichert');
 }
 
 /* ---------- Nachweis (PDF) erzeugen und in der Akte ablegen ---------- */
@@ -1313,6 +1405,10 @@ function bind(){
       if((x=el.closest('[data-dok]'))){var u=await call('kunden_dok_url',{id:x.dataset.dok});if(u.ok){if(H().openUrl)H().openUrl(u.url);else window.open(u.url,'_blank')}else msg(u.message,true);return}
       if((x=el.closest('[data-dokdel]'))){if(await dlg({title:'Dokument löschen?',ok:'Löschen',danger:true})){var r=await call('kunden_dok_delete',{id:x.dataset.dokdel});if(r.ok){var g=await call('kunden_get',{id:S.cur.id});if(g.ok){S.cur.dok=g.dokumente||[];draw()}}else msg(r.message,true)}return}
       if((x=el.closest('[data-unt]'))){unterlageErstellen(x.dataset.unt);return}
+      if((x=el.closest('[data-besdel]'))){besuchLoeschen(Number(x.dataset.besdel));return}
+      if((x=el.closest('[data-dokact]'))){if(!x.disabled)dokAktion(x.dataset.dokact,selektierte().map(function(d){return d.id}));return}
+      if((x=el.closest('[data-dokone]'))){var pr=x.dataset.dokone.split(':');dokAktion(pr[0],[pr[1]]);return}
+      if(el.id==='kdNoteAdd'){notizSpeichern();return}
       if((x=el.closest('[data-nw]'))){nachweisFuer(Number(x.dataset.nw));return}
       if(el.id==='kdAktiv'){var neu=!S.cur.aktiv;if(await dlg({title:neu?'Wieder aktivieren?':'Kunde deaktivieren?',text:neu?'':'Die Akte bleibt erhalten, erscheint aber nicht mehr unter „Aktive“.',ok:neu?'Aktivieren':'Deaktivieren',danger:!neu})){var r2=await call('kunden_set_aktiv',{id:S.cur.id,aktiv:neu});if(r2.ok){var i=S.list.findIndex(function(k){return k.id===S.cur.id});if(i>=0)S.list[i].aktiv=neu;closeKunde()}else msg(r2.message,true)}return}
       return;
@@ -1326,7 +1422,12 @@ function bind(){
   root.addEventListener('input',function(e){
     if(e.target.id==='kdQ'){S.q=e.target.value;clearTimeout(S.qt);S.qt=setTimeout(function(){var p=e.target.selectionStart;render();var q=$('#kdQ');q.focus();q.setSelectionRange(p,p)},200)}
   });
-  root.addEventListener('change',function(e){if(e.target.id==='docFile')uploadFiles(e.target.files)});
+  root.addEventListener('change',function(e){
+    var t=e.target;
+    if(t.id==='docFile'){uploadFiles(t.files);return}
+    if(S.cur&&t.dataset&&t.dataset.doksel!==undefined){S.cur.sel[t.dataset.doksel]=t.checked;if(!t.checked)delete S.cur.sel[t.dataset.doksel];collect();draw();return}
+    if(S.cur&&t.id==='dokAll'){S.cur.sel={};if(t.checked)S.cur.dok.forEach(function(x){S.cur.sel[x.id]=true});collect();draw();return}
+  });
 }
 var KD={
   async init(rootEl){S.root=rootEl;shell();bind();$('#kdBody').innerHTML='<div class="kdEmpty">Lade Kunden …</div>';if(await load())render()},
