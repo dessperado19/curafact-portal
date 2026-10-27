@@ -159,6 +159,7 @@ function initials(u){var x=S.users.find(function(z){return z.username===u});var 
 function userName(u){var x=S.users.find(function(z){return z.username===u});return(x&&x.display_name)||u||''}
 function me(){return(H().user||{}).username||''}
 function visible(t){
+  if(!listOf(t))return false;
   if(!S.allLists&&t.list_id!==S.listId)return false;
   if(S.mine&&(t.assignees||[]).indexOf(me())<0)return false;
   if(S.q){var h=((t.title||'')+' '+(t.customer_name||'')+' '+(t.tags||[]).join(' ')).toLowerCase();if(h.indexOf(S.q.toLowerCase())<0)return false}
@@ -170,7 +171,7 @@ async function load(full){
   var r=await call('board_load',(full||!S.since)?{}:{since:S.since});
   if(!r.ok){msg(r.message||'Board konnte nicht geladen werden.',true);return false}
   if(r.full)S.tasks=new Map();
-  if(r.lists)S.lists=r.lists;
+  if(r.lists)S.lists=r.lists.filter(function(l){return /^(pflegeberatung|pflege-?ausbau)$/i.test(String(l.name||'').trim())});
   if(r.users)S.users=r.users;
   (r.tasks||[]).forEach(function(t){if(t.deleted_at)S.tasks.delete(t.id);else S.tasks.set(t.id,t)});
   S.since=new Date(Date.parse(r.server_time)-5000).toISOString();
@@ -191,7 +192,6 @@ function renderBar(){
   h+='<label class="bdChk"><input type="checkbox" id="bdMine"'+(S.mine?' checked':'')+'> Meine</label>';
   if(S.view==='cal')h+='<label class="bdChk"><input type="checkbox" id="bdAll"'+(S.allLists?' checked':'')+'> alle Listen</label>';
   h+='<span class="bdSpacer"></span><button class="bdBtn primary" id="bdNew">+ Aufgabe</button><button class="bdBtn" id="bdTrash" title="Papierkorb">Papierkorb</button>';
-  if(H().isAdmin)h+='<button class="bdBtn" id="bdDupes" title="Doppelte Kunden-Aufgaben zusammenführen">Duplikate</button><button class="bdBtn" id="bdImport">Aus ClickUp übernehmen</button>';
   h+='<button class="bdBtn" id="bdReload" title="Neu laden">↻</button>';
   $('#bdBar').innerHTML=h;
 }
@@ -199,7 +199,7 @@ function render(){
   if(!S.root)return;
   var keep=$('.bdBoard');var sl=keep?keep.scrollLeft:0;
   renderBar();
-  if(!S.lists.length){$('#bdBody').innerHTML='<div class="bdEmpty">Noch keine Listen. Ein Administrator kann die Aufgaben mit „Aus ClickUp übernehmen“ importieren.</div>';return}
+  if(!S.lists.length){$('#bdBody').innerHTML='<div class="bdEmpty">Noch keine Listen „Pflegeberatung“ oder „Pflege-Ausbau“ vorhanden.</div>';return}
   if(S.view==='list')renderList();else if(S.view==='cal')renderCal();else renderBoard();
   var b=$('.bdBoard');if(b)b.scrollLeft=sl;
 }

@@ -37,10 +37,15 @@ button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
   </form>
 </div>
 <div class="wrap hidden" id="app">
-  <div id="head"><img src="logo.png" alt="Curafact"><span class="who" id="who"></span><button id="logout">Abmelden</button></div>
-  <div id="nav"><button data-tab="kunden">Kunden</button><button data-tab="board">Board</button></div>
-  <div id="tab-kunden"><div id="kdRoot"></div></div>
-  <div id="tab-board" class="hidden"><div id="bdRoot"></div></div>
+  <aside id="side">
+    <div id="head"><img src="logo.png" alt="Curafact"></div>
+    <div id="nav"><button data-tab="kunden">Kunden</button><button data-tab="board">Board</button></div>
+    <div class="sideBottom"><span class="who" id="who"></span><button id="logout">Abmelden</button></div>
+  </aside>
+  <main id="mainArea">
+    <div id="tab-kunden"><div id="kdRoot"></div></div>
+    <div id="tab-board" class="hidden"><div id="bdRoot"></div></div>
+  </main>
 </div>
 <script src="assets/lib/pdf-lib.min.js"></script>
 <!--NW:START-->
@@ -588,6 +593,7 @@ function initials(u){var x=S.users.find(function(z){return z.username===u});var 
 function userName(u){var x=S.users.find(function(z){return z.username===u});return(x&&x.display_name)||u||''}
 function me(){return(H().user||{}).username||''}
 function visible(t){
+  if(!listOf(t))return false;
   if(!S.allLists&&t.list_id!==S.listId)return false;
   if(S.mine&&(t.assignees||[]).indexOf(me())<0)return false;
   if(S.q){var h=((t.title||'')+' '+(t.customer_name||'')+' '+(t.tags||[]).join(' ')).toLowerCase();if(h.indexOf(S.q.toLowerCase())<0)return false}
@@ -599,7 +605,7 @@ async function load(full){
   var r=await call('board_load',(full||!S.since)?{}:{since:S.since});
   if(!r.ok){msg(r.message||'Board konnte nicht geladen werden.',true);return false}
   if(r.full)S.tasks=new Map();
-  if(r.lists)S.lists=r.lists;
+  if(r.lists)S.lists=r.lists.filter(function(l){return /^(pflegeberatung|pflege-?ausbau)$/i.test(String(l.name||'').trim())});
   if(r.users)S.users=r.users;
   (r.tasks||[]).forEach(function(t){if(t.deleted_at)S.tasks.delete(t.id);else S.tasks.set(t.id,t)});
   S.since=new Date(Date.parse(r.server_time)-5000).toISOString();
@@ -620,7 +626,6 @@ function renderBar(){
   h+='<label class="bdChk"><input type="checkbox" id="bdMine"'+(S.mine?' checked':'')+'> Meine</label>';
   if(S.view==='cal')h+='<label class="bdChk"><input type="checkbox" id="bdAll"'+(S.allLists?' checked':'')+'> alle Listen</label>';
   h+='<span class="bdSpacer"></span><button class="bdBtn primary" id="bdNew">+ Aufgabe</button><button class="bdBtn" id="bdTrash" title="Papierkorb">Papierkorb</button>';
-  if(H().isAdmin)h+='<button class="bdBtn" id="bdDupes" title="Doppelte Kunden-Aufgaben zusammenführen">Duplikate</button><button class="bdBtn" id="bdImport">Aus ClickUp übernehmen</button>';
   h+='<button class="bdBtn" id="bdReload" title="Neu laden">↻</button>';
   $('#bdBar').innerHTML=h;
 }
@@ -628,7 +633,7 @@ function render(){
   if(!S.root)return;
   var keep=$('.bdBoard');var sl=keep?keep.scrollLeft:0;
   renderBar();
-  if(!S.lists.length){$('#bdBody').innerHTML='<div class="bdEmpty">Noch keine Listen. Ein Administrator kann die Aufgaben mit „Aus ClickUp übernehmen“ importieren.</div>';return}
+  if(!S.lists.length){$('#bdBody').innerHTML='<div class="bdEmpty">Noch keine Listen „Pflegeberatung“ oder „Pflege-Ausbau“ vorhanden.</div>';return}
   if(S.view==='list')renderList();else if(S.view==='cal')renderCal();else renderBoard();
   var b=$('.bdBoard');if(b)b.scrollLeft=sl;
 }
@@ -1117,7 +1122,7 @@ function fromIso(iso){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');return m?m
 async function load(){
   var r=await call('kunden_list');
   if(!r.ok){msg(r.message||'Kunden konnten nicht geladen werden.',true);return false}
-  S.list=r.kunden||[];S.loaded=true;return true;
+  S.list=r.kunden||[];S.loaded=true;S.loadedAt=Date.now();return true;
 }
 function shell(){S.root.innerHTML='<div class="kd"><div class="kdBar" id="kdBar"></div><div id="kdBody"></div><div class="kdToast" style="display:none"></div><div id="kdModalHost"></div><div id="kdDlgHost"></div></div>'}
 function visible(k){
@@ -1132,7 +1137,8 @@ function renderBar(){
   var f=function(id,l){return'<button class="kdBtn'+(S.filter===id?' on':'')+'" data-filter="'+id+'">'+l+'</button>'};
   var h=f('aktiv','Aktive')+f('beratung','Beratung')+f('inaktiv','Inaktive');
   h+='<input class="kdSearch" id="kdQ" placeholder="Suchen …" value="'+esc(S.q)+'"><span class="kdSpacer"></span><button class="kdBtn primary" id="kdNew">+ Neuer Kunde</button>';
-  if(H().isAdmin)h+='<button class="kdBtn" id="kdImport">Import aus Studio</button>';
+  h+='<button class="kdBtn'+(S.eingangHinweis?' primary':'')+'" id="kdEingang" title="Neue Beratungskunden aus Studio (Ordner Portal_Eingang) übernehmen">Eingang prüfen'+(S.eingangHinweis?' •':'')+'</button>';
+  if(H().isAdmin)h+='<button class="kdBtn danger" id="kdReset" title="Alle Kundenakten löschen (mit Sicherung)">Kundenstamm zurücksetzen</button>';
   h+='<button class="kdBtn" id="kdReload" title="Neu laden">↻</button>';
   $('#kdBar').innerHTML=h;
 }
@@ -1221,7 +1227,7 @@ function draw(){
     c.dok.forEach(function(x){h+='<div class="kdFile"><input type="checkbox" data-doksel="'+x.id+'"'+(c.sel[x.id]?' checked':'')+'><span class="kdChip">'+esc(ARTEN[x.art]||x.art)+'</span><a data-dok="'+x.id+'">'+esc(x.file_name)+'</a><span class="kdLog">'+bytesFmt(x.size)+' · '+fmtTs(x.created_at)+'</span>'+(isPdf(x)?'<button class="kdBtn" data-dokone="druck:'+x.id+'">Drucken</button><button class="kdBtn" data-dokone="teilen:'+x.id+'">Teilen</button>':'')+'<button class="kdX" data-dokdel="'+x.id+'">×</button></div>'});
     if(!c.dok.length)h+='<div class="kdLog">Noch keine Dokumente.</div>';
     h+='</div>';
-    h+='<div class="kdSec"><div class="kdSecHead"><h4>Notizen</h4>'+(c.taskId?'<a class="kdBtn" style="text-decoration:none" href="./?task='+esc(c.taskId)+'" target="_blank" rel="noopener">Board-Aufgabe öffnen</a>':'')+'</div><div class="kdRow" style="align-items:flex-start"><textarea id="kdNoteTxt" rows="2" style="flex:1;min-width:200px" placeholder="Neue Notiz (z. B. Telefonat, Absprache, Hinweis) …">'+esc(c.noteDraft||'')+'</textarea><button class="kdBtn primary" id="kdNoteAdd">Notiz speichern</button></div>';
+    h+='<div class="kdSec"><div class="kdSecHead"><h4>Notizen</h4>'+(c.taskId?'<a class="kdBtn" style="text-decoration:none" href="./?task='+esc(c.taskId)+'" target="_blank" rel="noopener">Board-Aufgabe öffnen</a>':'<button class="kdBtn" id="kdTaskNew" title="Legt die Beratungs-Aufgabe dieses Kunden im Board an">Board-Aufgabe anlegen</button>')+'</div><div class="kdRow" style="align-items:flex-start"><textarea id="kdNoteTxt" rows="2" style="flex:1;min-width:200px" placeholder="Neue Notiz (z. B. Telefonat, Absprache, Hinweis) …">'+esc(c.noteDraft||'')+'</textarea><button class="kdBtn primary" id="kdNoteAdd">Notiz speichern</button></div>';
     if(c.notizen===null)h+='<div class="kdLog">Lade Notizen …</div>';
     else if(!c.notizen.length)h+='<div class="kdLog" style="margin-top:6px">Noch keine Notizen.</div>';
     else c.notizen.forEach(function(n){h+='<div class="kdNote"><div class="w">'+esc(n.author_name||n.author||'')+' · '+fmtTs(n.created_at)+'</div><div class="t">'+esc(n.body||'')+'</div></div>'});
@@ -1365,30 +1371,87 @@ async function unterlageErstellen(id){
   }catch(e){msg('Dokument konnte nicht erstellt werden: '+(e&&e.message||e),true)}
 }
 
-/* ---------- Import aus Studio (Admin) ---------- */
-var KEEP=['pflege_name','pflege_anschrift','pflege_kvnr','pflege_kasse','pflege_geburtsdatum','pflege_sig_dataurl','person_name','person_anschrift','person_geburtsdatum','person_kvnr','person_sig_dataurl','pflegegrade','pflegeberatung_kunde','beratungsbesuche','beratung_kalender','leistungsbeziehungen'];
+/* ---------- Eingang aus Studio (Ordner Portal_Eingang) ---------- */
+var KEEP=['pflege_name','pflege_anschrift','pflege_kvnr','pflege_kasse','pflege_geburtsdatum','pflege_telefon','pflege_sig_dataurl','person_name','person_anschrift','person_geburtsdatum','person_kvnr','person_sig_dataurl','pflegegrade','pflegeberatung_kunde','beratungsbesuche','beratung_kalender','leistungsbeziehungen'];
 function slim(d){var o={};KEEP.forEach(function(k){if(d[k]!==undefined&&d[k]!==null&&d[k]!=='')o[k]=d[k]});return o}
-async function runImport(){
-  var host=$('#kdModalHost');
-  host.innerHTML='<div class="kdModalBg"><div class="kdModal small"><h3>Import aus Studio</h3><p style="color:var(--k-muted)">Wählen Sie „Curafact_Kundenimport_Beratung.json“ (Kunden) und/oder „Curafact_Konfig_Import.json“ (Beratungspersonen, Textbausteine, Kassen, Unterschriften) – beide Dateien auf einmal geht auch. Aus Studio-Dateien werden nur die Felder für die Pflegeberatung übernommen. Bestehende Namen werden übersprungen.</p><input type="file" id="kdImpFile" accept=".json,application/json" multiple><div id="kdImpOut"></div><div class="kdRow" style="justify-content:flex-end;margin-top:14px"><button class="kdBtn" id="kdImpClose">Schließen</button></div></div></div>';
-  $('#kdImpClose',host).onclick=function(){host.innerHTML='';load().then(render)};
-  $('#kdImpFile',host).onchange=async function(e){
-    var out=$('#kdImpOut',host);var items=[];
-    for(var i=0;i<e.target.files.length;i++){
-      try{var j=JSON.parse(await e.target.files[i].text());
-        if(!Array.isArray(j)&&(j.textbausteine||j.personen||j.kassen)){var cr=await call('app_config_import',{config:j});out.innerHTML+='<div class="kdLog">'+esc(e.target.files[i].name)+': Konfiguration '+(cr.ok?'übernommen ('+cr.saved+' Bereiche)':'FEHLER: '+esc(cr.message||''))+'</div>';continue}
-        if(Array.isArray(j))j.forEach(function(x){items.push(slim(x))});else items.push(slim(j))}catch(err){out.innerHTML+='<div class="kdLog">'+esc(e.target.files[i].name)+': keine gültige JSON-Datei</div>'}
+/* gemerkter Ordner (Chrome/Edge: File System Access API) */
+function idb(){return new Promise(function(res,rej){var q=indexedDB.open('curafact_portal',1);q.onupgradeneeded=function(){q.result.createObjectStore('kv')};q.onsuccess=function(){res(q.result)};q.onerror=function(){rej(q.error)}})}
+async function idbGet(k){try{var db=await idb();return await new Promise(function(res){var r=db.transaction('kv').objectStore('kv').get(k);r.onsuccess=function(){res(r.result)};r.onerror=function(){res(null)}})}catch(e){return null}}
+async function idbSet(k,v){try{var db=await idb();await new Promise(function(res){var t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=res;t.onerror=res})}catch(e){}}
+function gesehen(){try{return JSON.parse(localStorage.getItem('kd_eingang')||'{}')}catch(e){return {}}}
+function gesehenSpeichern(m){try{localStorage.setItem('kd_eingang',JSON.stringify(m))}catch(e){}}
+async function dateienAusOrdner(h){var out=[];for await(var e of h.values()){if(e.kind==='file'&&/\.json$/i.test(e.name)&&e.name.charAt(0)!=='_')out.push(await e.getFile())}return out}
+/* verarbeitet Dateien: unveränderte (Name+Datum+Größe) werden übersprungen, neue Namen als Akte angelegt, vorhandene bleiben unverändert */
+async function eingangVerarbeiten(files,out){
+  var seen=gesehen(),items=[],keys=[],skippedSeen=0;
+  for(var i=0;i<files.length;i++){
+    var f=files[i],key=f.name+'|'+f.lastModified+'|'+f.size;
+    if(seen[key]){skippedSeen++;continue}
+    try{var j=JSON.parse(await f.text());var x=slim(j);if(x.pflege_name){items.push(x);keys.push(key)}}catch(err){if(out)out.innerHTML+='<div class="kdLog">'+esc(f.name)+': keine gültige JSON-Datei</div>'}
+  }
+  var imp=0,skip=0,fail=[];
+  for(var k=0;k<items.length;k+=10){
+    if(out)out.innerHTML='<div class="kdProg"><i style="width:'+Math.round(k*100/items.length)+'%"></i></div><div class="kdLog">'+k+' von '+items.length+' …</div>';
+    var r=await call('kunden_import',{items:items.slice(k,k+10)});
+    if(!r.ok){if(out)out.innerHTML='<div class="kdLog" style="color:#b91c1c">'+esc(r.message||'Fehler')+'</div>';return null}
+    imp+=r.imported;skip+=r.skipped;fail=fail.concat(r.failed||[]);
+    keys.slice(k,k+10).forEach(function(kk){seen[kk]=1});
+  }
+  gesehenSpeichern(seen);
+  return {neu:imp,vorhanden:skip,fehler:fail,unveraendert:skippedSeen,dateien:files.length};
+}
+function eingangText(r){return '<p><b>Fertig.</b> '+r.neu+' neue Akte(n) angelegt'+(r.vorhanden?', '+r.vorhanden+' gab es schon':'')+(r.unveraendert?', '+r.unveraendert+' Datei(en) unverändert seit der letzten Prüfung':'')+(r.fehler.length?', '+r.fehler.length+' fehlgeschlagen':'')+'.</p>'+(r.fehler.length?'<div class="kdBox">'+esc(r.fehler.join('\n'))+'</div>':'')}
+async function runEingang(){
+  var host=$('#kdModalHost'),hasDir=!!window.showDirectoryPicker,saved=hasDir?await idbGet('eingangOrdner'):null;
+  host.innerHTML='<div class="kdModalBg"><div class="kdModal small"><h3>Eingang aus Studio</h3><p style="color:var(--k-muted)">Studio legt neue Beratungskunden als Dateien im Ordner „Portal_Eingang“ ab (im Ordner Curafact Studio). Hier werden neue Kunden als Akte angelegt; vorhandene Akten bleiben unverändert.</p><div class="kdRow">'+
+    (hasDir?(saved?'<button class="kdBtn primary" id="kdEinGemerkt">Gemerkten Ordner prüfen</button>':'')+'<button class="kdBtn'+(saved?'':' primary')+'" id="kdEinOrdner">Ordner wählen</button>':'')+
+    '<label class="kdBtn" style="cursor:pointer">Dateien wählen<input type="file" id="kdEinFile" accept=".json,application/json" multiple style="display:none"></label><button class="kdBtn" id="kdEinClose">Schließen</button></div>'+
+    (hasDir?'':'<p class="kdLog" style="margin-top:8px">Hinweis: Dieser Browser kann keinen Ordner dauerhaft verbinden (nur Chrome/Edge). Wähle im Dateidialog alle Dateien des Ordners (Cmd+A).</p>')+'<div id="kdImpOut" style="margin-top:10px"></div></div></div>';
+  var out=$('#kdImpOut',host);
+  $('#kdEinClose',host).onclick=function(){host.innerHTML='';load().then(render)};
+  async function lauf(files){var r=await eingangVerarbeiten(files,out);if(r){out.innerHTML=eingangText(r);S.eingangHinweis=false}}
+  $('#kdEinFile',host).onchange=function(e){lauf(Array.prototype.slice.call(e.target.files))};
+  if(hasDir){
+    $('#kdEinOrdner',host).onclick=async function(){try{var h=await window.showDirectoryPicker({id:'portalEingang',mode:'read'});await idbSet('eingangOrdner',h);lauf(await dateienAusOrdner(h))}catch(err){if(err&&err.name!=='AbortError')out.innerHTML='<div class="kdLog" style="color:#b91c1c">'+esc(err.message||err)+'</div>'}};
+    if(saved)$('#kdEinGemerkt',host).onclick=async function(){try{var p=await saved.requestPermission({mode:'read'});if(p!=='granted'){out.innerHTML='<div class="kdLog">Zugriff nicht erlaubt.</div>';return}lauf(await dateienAusOrdner(saved))}catch(err){out.innerHTML='<div class="kdLog" style="color:#b91c1c">'+esc(err.message||err)+'</div>'}};
+  }
+}
+/* nach dem Laden: gemerkten Ordner still prüfen (falls der Browser den Zugriff ohne Nachfrage erlaubt) */
+async function autoEingang(){
+  try{
+    if(!window.showDirectoryPicker)return;
+    var h=await idbGet('eingangOrdner');if(!h)return;
+    var p=await h.queryPermission({mode:'read'});
+    if(p!=='granted'){S.eingangHinweis=true;renderBar();return}
+    var r=await eingangVerarbeiten(await dateienAusOrdner(h),null);
+    if(r&&r.neu){msg(r.neu+' neue Beratungskunden aus Studio übernommen');await load();render()}
+  }catch(e){}
+}
+/* ---------- Kundenstamm zurücksetzen (Admin): erst Sicherung, dann Bestätigung ---------- */
+async function runReset(){
+  var host=$('#kdModalHost'),n=S.list.length,sicher=false;
+  host.innerHTML='<div class="kdModalBg"><div class="kdModal small"><h3>Kundenstamm zurücksetzen</h3><p style="color:var(--k-muted)"><b>'+n+' Kundenakten</b> werden unwiderruflich gelöscht – auch Beratungsbesuche, die nur hier im Portal erfasst wurden. Die Zuordnung der Dokumente (Nachweise, Vereinbarungen …) geht verloren; die Dateien bleiben im Speicher erhalten. Board-Aufgaben bleiben bestehen.</p><p style="color:var(--k-muted)">Schritt 1: Sicherung aller Akten herunterladen.</p><div class="kdRow"><button class="kdBtn primary" id="kdRsSich">Sicherung herunterladen</button></div><p style="color:var(--k-muted);margin-top:14px">Schritt 2: Zum Bestätigen LÖSCHEN eintippen.</p><input type="text" id="kdRsTxt" placeholder="LÖSCHEN" autocomplete="off"><div class="kdRow" style="margin-top:10px"><button class="kdBtn danger" id="kdRsGo" disabled>Alle Akten löschen</button><button class="kdBtn" id="kdRsClose">Abbrechen</button></div><div id="kdImpOut" style="margin-top:10px"></div></div></div>';
+  var out=$('#kdImpOut',host),go=$('#kdRsGo',host),txt=$('#kdRsTxt',host);
+  function pruef(){go.disabled=!(sicher&&txt.value.trim()==='LÖSCHEN')}
+  txt.oninput=pruef;
+  $('#kdRsClose',host).onclick=function(){host.innerHTML=''};
+  $('#kdRsSich',host).onclick=async function(){
+    this.disabled=true;var all=[];
+    for(var i=0;i<S.list.length;i++){
+      out.innerHTML='<div class="kdProg"><i style="width:'+Math.round(i*100/Math.max(1,S.list.length))+'%"></i></div><div class="kdLog">Sicherung '+i+' von '+S.list.length+' …</div>';
+      var g=await call('kunden_get',{id:S.list[i].id});
+      if(!g.ok){out.innerHTML='<div class="kdLog" style="color:#b91c1c">Sicherung fehlgeschlagen bei '+esc(S.list[i].name)+': '+esc(g.message||'')+'</div>';this.disabled=false;return}
+      all.push({kunde:g.kunde,dokumente:g.dokumente||[]});
     }
-    items=items.filter(function(x){return x.pflege_name});
-    if(!items.length){return}
-    var imp=0,skip=0,fail=[];
-    for(var k=0;k<items.length;k+=10){
-      out.innerHTML='<div class="kdProg"><i style="width:'+Math.round(k*100/items.length)+'%"></i></div><div class="kdLog">'+k+' von '+items.length+' …</div>';
-      var r=await call('kunden_import',{items:items.slice(k,k+10)});
-      if(!r.ok){out.innerHTML='<div class="kdLog" style="color:#b91c1c">'+esc(r.message||'Fehler')+'</div>';return}
-      imp+=r.imported;skip+=r.skipped;fail=fail.concat(r.failed||[]);
-    }
-    out.innerHTML='<p><b>Fertig.</b> '+imp+' übernommen, '+skip+' übersprungen (gab es schon)'+(fail.length?', '+fail.length+' fehlgeschlagen':'')+'.</p>'+(fail.length?'<div class="kdBox">'+esc(fail.join('\n'))+'</div>':'');
+    var blob=new Blob([JSON.stringify({erstellt:new Date().toISOString(),anzahl:all.length,akten:all},null,1)],{type:'application/json'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Portal_Sicherung_Kunden_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();
+    sicher=true;out.innerHTML='<div class="kdLog">Sicherung mit '+all.length+' Akten heruntergeladen. Bitte die Datei an einem sicheren Ort aufbewahren.</div>';pruef();
+  };
+  go.onclick=async function(){
+    go.disabled=true;var r=await call('kunden_reset',{bestaetigung:'LÖSCHEN'});
+    if(!r.ok){out.innerHTML='<div class="kdLog" style="color:#b91c1c">'+esc(r.message||'Fehler')+'</div>';return}
+    out.innerHTML='<p><b>Fertig.</b> '+r.geloescht+' Akten gelöscht. Jetzt „Eingang prüfen“ klicken, um die Beratungskunden aus Studio neu zu laden.</p>';
+    gesehenSpeichern({});await load();render();
   };
 }
 
@@ -1409,12 +1472,14 @@ function bind(){
       if((x=el.closest('[data-dokact]'))){if(!x.disabled)dokAktion(x.dataset.dokact,selektierte().map(function(d){return d.id}));return}
       if((x=el.closest('[data-dokone]'))){var pr=x.dataset.dokone.split(':');dokAktion(pr[0],[pr[1]]);return}
       if(el.id==='kdNoteAdd'){notizSpeichern();return}
+      if(el.id==='kdTaskNew'){el.disabled=true;var tr=await call('board_ensure_task',{name:S.cur.data.pflege_name||'',kind:'beratung'});if(tr.ok){S.cur.taskId=tr.task_id;collect();draw();msg(tr.created?'Aufgabe im Board angelegt':'Aufgabe gab es schon – verknüpft')}else{msg(tr.message||'Aufgabe konnte nicht angelegt werden',true);el.disabled=false}return}
       if((x=el.closest('[data-nw]'))){nachweisFuer(Number(x.dataset.nw));return}
       if(el.id==='kdAktiv'){var neu=!S.cur.aktiv;if(await dlg({title:neu?'Wieder aktivieren?':'Kunde deaktivieren?',text:neu?'':'Die Akte bleibt erhalten, erscheint aber nicht mehr unter „Aktive“.',ok:neu?'Aktivieren':'Deaktivieren',danger:!neu})){var r2=await call('kunden_set_aktiv',{id:S.cur.id,aktiv:neu});if(r2.ok){var i=S.list.findIndex(function(k){return k.id===S.cur.id});if(i>=0)S.list[i].aktiv=neu;closeKunde()}else msg(r2.message,true)}return}
       return;
     }
     if(el.id==='kdNew'){newKunde();return}
-    if(el.id==='kdImport'){runImport();return}
+    if(el.id==='kdEingang'){runEingang();return}
+    if(el.id==='kdReset'){runReset();return}
     if(el.id==='kdReload'){if(await load())render();return}
     if((x=el.closest('[data-filter]'))){S.filter=x.dataset.filter;render();return}
     if((x=el.closest('tr.row,.kdFaellig .it'))){openKunde(x.dataset.id);return}
@@ -1430,8 +1495,8 @@ function bind(){
   });
 }
 var KD={
-  async init(rootEl){S.root=rootEl;shell();bind();$('#kdBody').innerHTML='<div class="kdEmpty">Lade Kunden …</div>';if(await load())render()},
-  async show(){if(!S.root)return;if(S.cur)return;if(await load())render()},
+  async init(rootEl){S.root=rootEl;shell();bind();$('#kdBody').innerHTML='<div class="kdEmpty">Lade Kunden …</div>';if(await load()){render();autoEingang()}},
+  async show(){if(!S.root)return;if(S.cur)return;if(S.loaded&&Date.now()-(S.loadedAt||0)<300000)return;if(await load())render()},
   open:function(id){return openKunde(id)}
 };
 window.KD=KD;
@@ -1497,4 +1562,57 @@ window.KD=KD;
   if(sess)start();else show(false);
 })();
 </script>
+<style id="cfTheme">
+/* ===== Einheitliches Curafact-Design (wie Studio-App und private Web-Ansicht) ===== */
+:root{--teal:#16A9BA;--navy:#0F3F7A;--line:#cfe9ee;--field:#f3f9fd}
+.wrap{max-width:none;margin:0;padding:0;display:flex;min-height:100vh}
+#side{flex:0 0 230px;width:230px;background:linear-gradient(180deg,#0E4A8B,#082d52);color:#fff;padding:22px 16px;display:flex;flex-direction:column;gap:20px;position:sticky;top:0;height:100vh}
+#head{display:block;margin:0;background:#fff;border-radius:20px;padding:12px;box-shadow:0 18px 45px rgba(14,74,139,.10)}
+#head img{height:auto;width:100%;display:block}
+#nav{display:flex;flex-direction:column;gap:9px;margin:0;border:0;padding:0;overflow:visible}
+#nav button{flex:none;display:block;width:100%;border:0;background:rgba(255,255,255,.10);color:#fff;border-radius:14px;padding:12px 14px;text-align:left;font-weight:850;font-size:14px}
+#nav button:hover{background:var(--cyan);color:#062a45}
+#nav button.on{background:var(--cyan);color:#062a45;border:0}
+#side .sideBottom{margin-top:auto;font-size:13px;color:rgba(255,255,255,.78)}
+#side .who{display:block;flex:none;text-align:left;color:rgba(255,255,255,.78);margin-bottom:8px;white-space:normal;overflow:visible}
+#side .who strong{color:#fff}
+#side #logout{width:100%;background:#fff;color:var(--blue)}
+#mainArea{flex:1;min-width:0;padding:26px}
+/* Überschriften mit türkiser Leiste */
+.kdSecHead h4,.bdSecHead h4,.kdModal h3,.bdModal h3,.kdFaellig h4{display:flex;align-items:center;gap:10px;color:var(--navy)}
+.kdSecHead h4:before,.bdSecHead h4:before,.kdModal h3:before,.bdModal h3:before,.kdFaellig h4:before{content:'';width:7px;height:18px;background:var(--teal);border-radius:3px;flex:none}
+.kdSecHead,.bdSecHead{border-bottom:1px solid var(--line);padding-bottom:6px}
+.kdHead h3{border:0}
+/* Felder: hellblau mit türkiser Linie */
+.kd input:not([type=checkbox]):not([type=radio]):not([type=file]),.kd select,.kd textarea,.bd input:not([type=checkbox]):not([type=radio]):not([type=file]),.bd select,.bd textarea,
+.kdModal input:not([type=checkbox]):not([type=radio]):not([type=file]),.kdModal select,.kdModal textarea,.bdModal input:not([type=checkbox]):not([type=radio]):not([type=file]),.bdModal select,.bdModal textarea,
+.kdSearch,.bdSearch,.bdQuick,#login input{border:1px solid var(--border);border-bottom:2px solid var(--teal);background:var(--field);border-radius:9px}
+.kd input:focus,.kd select:focus,.kd textarea:focus,.bd input:focus,.bd select:focus,.bd textarea:focus,.kdModal input:focus,.kdModal select:focus,.kdModal textarea:focus,.bdModal input:focus,.bdModal select:focus,.bdModal textarea:focus{outline:none;border-color:var(--teal);background:#fff}
+.kdModal label,.bdGrid label,.bdLbl{color:#4f6a85}
+/* runde Haken */
+.kd input[type=checkbox],.bd input[type=checkbox],.kdModal input[type=checkbox],.bdModal input[type=checkbox]{-webkit-appearance:none;appearance:none;width:18px;height:18px;min-width:18px;border:1.5px solid var(--teal);border-radius:6px;background:#fff;display:inline-grid;place-content:center;cursor:pointer;vertical-align:middle;margin:0 6px 0 0;padding:0}
+.kd input[type=checkbox]:checked,.bd input[type=checkbox]:checked,.kdModal input[type=checkbox]:checked,.bdModal input[type=checkbox]:checked{background:var(--navy);border-color:var(--navy)}
+.kd input[type=checkbox]:checked:after,.bd input[type=checkbox]:checked:after,.kdModal input[type=checkbox]:checked:after,.bdModal input[type=checkbox]:checked:after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+/* Tabellen, Karten, Schaltflächen */
+.kdTable,.bdTable{border-color:var(--line)}
+.kdTable th,.bdTable th{background:#f3fafc;color:var(--navy)}
+.kdBtn,.bdBtn,.bdTab,.bdViewBtn{border-color:var(--border)}
+.kdBtn.primary,.bdBtn.primary,.bdTab.on,.bdViewBtn.on,.kdBtn.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.kdBtn:hover,.bdBtn:hover,.bdTab:hover,.bdViewBtn:hover{border-color:var(--teal)}
+.kdBes,.bdCl,.kdFaellig,.kdBox,.bdCol{border-color:var(--line)}
+.bdCol{background:#e9f4f8}
+.bdCard:hover{border-color:var(--teal)}
+.kdModal,.bdModal{border:1px solid var(--line)}
+#login{border:1px solid var(--line)}
+@media(max-width:1000px){
+  .wrap{display:block}
+  #side{position:static;width:auto;height:auto;flex:none;padding:14px;gap:12px}
+  #head{max-width:200px}
+  #nav{flex-direction:row;flex-wrap:wrap}
+  #nav button{width:auto}
+  #side .sideBottom{margin-top:0}
+  #mainArea{padding:14px}
+}
+@media print{#side{display:none}#mainArea{padding:0}}
+</style>
 </body></html>
