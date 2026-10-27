@@ -39,15 +39,17 @@ button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
 <div class="wrap hidden" id="app">
   <aside id="side">
     <div id="head"><img src="logo.png" alt="Curafact"></div>
-    <div id="nav"><button data-tab="kunden">Kunden</button><button data-tab="board">Board</button></div>
+    <div id="nav"><button data-tab="kunden">Kunden</button><button data-tab="board">Board</button><button data-tab="mitarbeiter" id="navMa" class="hidden">Mitarbeiter</button></div>
     <div class="sideBottom"><span class="who" id="who"></span><button id="logout">Abmelden</button></div>
   </aside>
   <main id="mainArea">
     <div id="tab-kunden"><div id="kdRoot"></div></div>
     <div id="tab-board" class="hidden"><div id="bdRoot"></div></div>
+    <div id="tab-mitarbeiter" class="hidden"><div id="maRoot"></div></div>
   </main>
 </div>
 <script src="assets/lib/pdf-lib.min.js"></script>
+<script src="assets/lib/qrcode.min.js"></script>
 <!--NW:START-->
 <script>
 /* Nachweis über einen Beratungsbesuch (§ 37 Abs. 3 SGB XI) im Browser erzeugen: Nachbau von scripts/fill_beratung_nachweis.py
@@ -1504,6 +1506,80 @@ window.KD=KD;
 })();
 </script>
 <!--KD:END-->
+<!--MA:START-->
+<script>
+(function(){
+'use strict';
+var S={root:null,users:[],loaded:false};
+function H(){return window.BD_HOST||{}}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function $(s,r){return (r||S.root).querySelector(s)}
+async function call(a,p){try{var r=await H().call(a,p||{});return r||{ok:false,message:'Keine Antwort vom Server.'}}catch(e){return{ok:false,message:'Fehler: '+e}}}
+function msg(t,err){var el=$('.maToast');el.textContent=t;el.className='maToast'+(err?' err':'');el.style.display='block';clearTimeout(S.tt);S.tt=setTimeout(function(){el.style.display='none'},err?6000:2800)}
+function fmt(t){if(!t)return'';var d=new Date(t);return isNaN(d)?'':d.toLocaleDateString('de-DE')}
+function me(){return (H().user||{}).username||''}
+function isSuper(){return (H().user||{}).role==='superadmin'}
+var ROLLE={user:'Mitarbeiter',admin:'Admin',superadmin:'Superadmin'};
+function shell(){
+  S.root.innerHTML='<div class="ma"><div class="maHead"><h2>Mitarbeiter</h2><p>Konten für die Anmeldung per Authenticator-App. Neue Mitarbeiter scannen den QR-Code einmal mit ihrer Authenticator-App (z. B. Google oder Microsoft Authenticator).</p></div>'+
+   '<div class="maPanel"><h3>Neuer Mitarbeiter</h3><div class="maForm"><div><label>Benutzername</label><input id="maUser" placeholder="z. B. samane" autocomplete="off" autocapitalize="none" spellcheck="false"></div><div><label>Anzeigename</label><input id="maName" placeholder="z. B. Samane" autocomplete="off"></div><div><label>Rolle</label><select id="maRole"><option value="user">Mitarbeiter</option>'+(isSuper()?'<option value="admin">Admin</option>':'')+'</select></div><div class="maGo"><button class="maBtn primary" id="maCreate">Konto anlegen</button></div></div></div>'+
+   '<div class="maPanel"><h3>Konten</h3><div id="maList"><div class="maEmpty">Lade …</div></div></div><div class="maToast" style="display:none"></div><div id="maModalHost"></div></div>';
+}
+async function load(){
+  var r=await call('users_list');
+  if(!r.ok){$('#maList').innerHTML='<div class="maEmpty">'+esc(r.message||'Konten konnten nicht geladen werden.')+'</div>';return}
+  S.users=r.users||[];S.loaded=true;renderList();
+}
+function renderList(){
+  if(!S.users.length){$('#maList').innerHTML='<div class="maEmpty">Noch keine Konten.</div>';return}
+  $('#maList').innerHTML='<table class="maTable"><thead><tr><th>Benutzername</th><th>Anzeigename</th><th>Rolle</th><th>Status</th><th>Angelegt</th><th></th></tr></thead><tbody>'+S.users.map(function(u){
+    var self=u.username===me(),canReset=u.role==='user'||isSuper()||self;
+    return '<tr class="'+(u.active?'':'off')+'"><td><b>'+esc(u.username)+'</b>'+(self?' <span class="maChip">Sie</span>':'')+'</td><td>'+esc(u.display_name)+'</td><td>'+esc(ROLLE[u.role]||u.role)+'</td><td>'+(u.active?'<span class="maChip ok">aktiv</span>':'<span class="maChip off">deaktiviert</span>')+'</td><td>'+esc(fmt(u.created_at))+'</td><td class="maAct">'+
+      (canReset?'<button class="maBtn" data-reset="'+esc(u.username)+'">Neuer QR-Code</button>':'')+(self?'':'<button class="maBtn'+(u.active?' danger':'')+'" data-active="'+esc(u.username)+'" data-to="'+(u.active?'0':'1')+'">'+(u.active?'Deaktivieren':'Aktivieren')+'</button>')+'</td></tr>';
+  }).join('')+'</tbody></table>';
+}
+function qrHtml(uri){
+  try{var q=qrcode(0,'M');q.addData(uri);q.make();return q.createImgTag(6,8)}catch(e){return '<div class="maEmpty">QR-Code konnte nicht erzeugt werden – bitte den Schlüssel unten von Hand eintragen.</div>'}
+}
+function zeigeQr(titel,res){
+  var uri='otpauth://totp/'+encodeURIComponent('Curafact Portal:'+res.username)+'?secret='+encodeURIComponent(res.secret)+'&issuer='+encodeURIComponent('Curafact Portal');
+  var host=$('#maModalHost');
+  host.innerHTML='<div class="maModalBg"><div class="maModal"><h3>'+esc(titel)+'</h3><p><b>'+esc(res.display_name||res.username)+'</b> ('+esc(res.username)+') – '+esc(ROLLE[res.role]||res.role)+'</p><p class="maWarn">Dieser QR-Code wird nur jetzt angezeigt. Bitte mit der Authenticator-App scannen, bevor du das Fenster schließt.</p><div class="maQr">'+qrHtml(uri)+'</div><p class="maSmall">Falls Scannen nicht geht, Schlüssel von Hand eintragen:<br><code>'+esc(res.secret)+'</code></p><ol class="maSmall"><li>Authenticator-App öffnen und „Konto hinzufügen“ wählen.</li><li>QR-Code scannen.</li><li>Auf portal.curafact.de mit dem Benutzernamen <b>'+esc(res.username)+'</b> und dem 6-stelligen Code anmelden.</li></ol><div class="maRow"><button class="maBtn" id="maPrint">Drucken</button><button class="maBtn primary" id="maClose">Fertig</button></div></div></div>';
+  $('#maClose',host).onclick=function(){host.innerHTML=''};
+  $('#maPrint',host).onclick=function(){document.body.classList.add('maPrinting');window.print();setTimeout(function(){document.body.classList.remove('maPrinting')},500)};
+}
+function bind(){
+  S.root.addEventListener('click',async function(e){
+    var el=e.target,x;
+    if(el.id==='maCreate'){
+      var u=$('#maUser').value.trim().toLowerCase().replace(/[^\w.\-]/g,''),n=$('#maName').value.trim(),role=$('#maRole').value;
+      if(!u){msg('Bitte einen Benutzernamen eintragen.',true);return}
+      el.disabled=true;var r=await call('users_create',{username:u,display_name:n||u,role:role});el.disabled=false;
+      if(!r.ok){msg(r.message||'Konto konnte nicht angelegt werden.',true);return}
+      $('#maUser').value='';$('#maName').value='';zeigeQr('Neues Konto angelegt',r);load();return;
+    }
+    if((x=el.closest('[data-reset]'))){
+      if(!confirm('Für '+x.dataset.reset+' einen neuen QR-Code erzeugen? Der alte Code und alle bestehenden Anmeldungen dieser Person werden ungültig.'))return;
+      x.disabled=true;var r2=await call('users_reset_totp',{username:x.dataset.reset});x.disabled=false;
+      if(!r2.ok){msg(r2.message||'Neuer Code konnte nicht erzeugt werden.',true);return}
+      zeigeQr('Neuer QR-Code',r2);return;
+    }
+    if((x=el.closest('[data-active]'))){
+      var an=x.dataset.to==='1';
+      if(!an&&!confirm(x.dataset.active+' deaktivieren? Die Person kann sich danach nicht mehr anmelden.'))return;
+      x.disabled=true;var r3=await call('users_set_active',{username:x.dataset.active,active:an});
+      if(!r3.ok){msg(r3.message||'Konto konnte nicht geändert werden.',true);x.disabled=false;return}
+      msg(an?'Konto aktiviert':'Konto deaktiviert');load();return;
+    }
+  });
+}
+window.MA={
+  async init(rootEl){S.root=rootEl;shell();bind();await load()},
+  async show(){if(!S.root)return;if(!S.loaded||!$('#maModalHost').children.length)await load()}
+};
+})();
+</script>
+<!--MA:END-->
 <script>
 (function(){
   var LOCAL=/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
@@ -1515,7 +1591,7 @@ window.KD=KD;
   function show(app){document.getElementById('login').classList.toggle('hidden',app);document.getElementById('app').classList.toggle('hidden',!app)}
   function logout(msg){
     if(sess){fetch(API,{method:'POST',headers:{'Content-Type':'application/json','x-curafact-session':sess.token},body:JSON.stringify({action:'logout'})}).catch(function(){})}
-    sess=null;save();show(false);if(window.BD)BD.stop();started={};document.getElementById('bdRoot').innerHTML='';document.getElementById('kdRoot').innerHTML='';
+    sess=null;save();show(false);if(window.BD)BD.stop();started={};document.getElementById('bdRoot').innerHTML='';document.getElementById('kdRoot').innerHTML='';document.getElementById('maRoot').innerHTML='';
     document.getElementById('loginErr').textContent=msg||'';document.getElementById('code').value='';
   }
   function touch(){if(sess){sess.last=Date.now();save()}}
@@ -1536,19 +1612,21 @@ window.KD=KD;
     openUrl:function(u){window.open(u,'_blank')}
   };
   function tab(name){
-    ['kunden','board'].forEach(function(t){document.getElementById('tab-'+t).classList.toggle('hidden',t!==name)});
+    ['kunden','board','mitarbeiter'].forEach(function(t){document.getElementById('tab-'+t).classList.toggle('hidden',t!==name)});
     document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===name)});
     try{history.replaceState(null,'',location.pathname+location.search+'#'+name)}catch(e){}
-    if(!started[name]){started[name]=true;(name==='board'?BD:KD).init(document.getElementById(name==='board'?'bdRoot':'kdRoot'))}
-    else (name==='board'?BD:KD).show();
+    var M=name==='board'?BD:(name==='mitarbeiter'?MA:KD),rid=name==='board'?'bdRoot':(name==='mitarbeiter'?'maRoot':'kdRoot');
+    if(!started[name]){started[name]=true;M.init(document.getElementById(rid))}
+    else M.show();
   }
   document.getElementById('nav').addEventListener('click',function(e){var b=e.target.closest('button[data-tab]');if(b)tab(b.dataset.tab)});
   function start(){
     show(true);
     document.getElementById('who').innerHTML='Angemeldet: <strong>'+(sess.user.display_name||sess.user.username).replace(/[<>&]/g,'')+'</strong>';
+    document.getElementById('navMa').classList.toggle('hidden',!window.BD_HOST.isAdmin);
     var want=(location.hash||'').replace('#','');
     if(/[?&]task=/.test(location.search))want='board';
-    tab(want==='board'?'board':'kunden');
+    tab(want==='board'?'board':(want==='mitarbeiter'&&window.BD_HOST.isAdmin?'mitarbeiter':'kunden'));
   }
   document.getElementById('logout').onclick=function(){logout('')};
   document.getElementById('loginForm').addEventListener('submit',async function(e){
@@ -1615,5 +1693,29 @@ window.KD=KD;
   #mainArea{padding:14px}
 }
 @media print{#side{display:none}#mainArea{padding:0}}
+/* ===== Mitarbeiter (Admin) ===== */
+.ma{color:var(--text);font-size:14px}.ma *{box-sizing:border-box}
+.maHead h2{margin:0 0 4px;color:var(--navy);display:flex;align-items:center;gap:10px}.maHead h2:before{content:'';width:8px;height:22px;background:var(--teal);border-radius:3px}
+.maHead p{margin:0 0 14px;color:var(--muted)}
+.maPanel{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}
+.maPanel h3{margin:0 0 12px;color:var(--navy);display:flex;align-items:center;gap:10px}.maPanel h3:before{content:'';width:7px;height:18px;background:var(--teal);border-radius:3px}
+.maForm{display:grid;grid-template-columns:1fr 1fr 180px auto;gap:12px;align-items:end}
+.ma label{display:block;font-size:12px;font-weight:800;color:#4f6a85;text-transform:uppercase;margin-bottom:4px}
+.ma input,.ma select{width:100%;border:1px solid var(--border);border-bottom:2px solid var(--teal);background:var(--field);border-radius:9px;padding:10px;font-size:14px;font-family:inherit}
+.maBtn{border:1px solid var(--border);background:#fff;color:var(--blue);border-radius:12px;padding:9px 13px;font-weight:800;cursor:pointer;font-size:14px;font-family:inherit}
+.maBtn.primary{background:var(--navy);border-color:var(--navy);color:#fff}.maBtn.danger{color:#b91c1c}.maBtn:hover{border-color:var(--teal)}.maBtn[disabled]{opacity:.5}
+.maTable{width:100%;border-collapse:collapse}.maTable th{background:#f3fafc;color:var(--navy);text-align:left;font-size:12px;text-transform:uppercase;padding:10px}
+.maTable td{padding:10px;border-top:1px solid var(--border);vertical-align:middle}.maTable tr.off td{opacity:.6}.maAct{white-space:nowrap;text-align:right}.maAct .maBtn{padding:6px 10px;font-size:13px;margin-left:6px}
+.maChip{font-size:12px;border-radius:999px;padding:2px 8px;background:#eef3f7;color:var(--muted);font-weight:700}.maChip.ok{background:#dff7ee;color:#087044}.maChip.off{background:#fde8e8;color:#b91c1c}
+.maEmpty{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;color:var(--muted)}
+.maModalBg{position:fixed;inset:0;background:rgba(7,32,58,.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 12px}
+.maModal{background:#fff;border-radius:18px;width:100%;max-width:460px;padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.35);border:1px solid var(--line)}
+.maModal h3{margin:0 0 8px;color:var(--navy)}.maWarn{background:#fff8e6;border:1px solid #f0dca0;color:#6b5200;border-radius:10px;padding:8px 10px}
+.maQr{text-align:center;margin:12px 0}.maQr img{max-width:100%;height:auto}.maSmall{font-size:13px;color:var(--muted)}.maSmall code{word-break:break-all;color:var(--text);background:#f2f6f9;padding:2px 6px;border-radius:6px}
+.maRow{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.maToast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0b457f;color:#fff;border-radius:12px;padding:10px 16px;z-index:100001;font-weight:700;max-width:90vw}.maToast.err{background:#b91c1c}
+@media(max-width:800px){.maForm{grid-template-columns:1fr}.maTable{font-size:13px}.maAct{white-space:normal}}
+@media print{body.maPrinting #side,body.maPrinting #mainArea>div>div>.ma>.maHead,body.maPrinting .maPanel{display:none}body.maPrinting .maModalBg{position:static;background:none;padding:0}body.maPrinting .maModal{box-shadow:none;border:0}body.maPrinting .maRow{display:none}}
+
 </style>
 </body></html>
