@@ -1138,7 +1138,7 @@ function renderBar(){
   var h=f('aktiv','Aktive')+f('beratung','Beratung')+f('inaktiv','Inaktive');
   h+='<input class="kdSearch" id="kdQ" placeholder="Suchen …" value="'+esc(S.q)+'"><span class="kdSpacer"></span><button class="kdBtn primary" id="kdNew">+ Neuer Kunde</button>';
   h+='<button class="kdBtn'+(S.eingangHinweis?' primary':'')+'" id="kdEingang" title="Neue Beratungskunden aus Studio (Ordner Portal_Eingang) übernehmen">Eingang prüfen'+(S.eingangHinweis?' •':'')+'</button>';
-  if(H().isAdmin)h+='<button class="kdBtn danger" id="kdReset" title="Alle Kundenakten löschen (mit Sicherung)">Kundenstamm zurücksetzen</button>';
+  if(H().isAdmin)h+='<button class="kdBtn" id="kdBoardSync" title="Für alle Beratungskunden die Aufgabe im Board anlegen (falls sie fehlt) und den nächsten Termin als Fälligkeit setzen">Board abgleichen</button><button class="kdBtn danger" id="kdReset" title="Alle Kundenakten löschen (mit Sicherung)">Kundenstamm zurücksetzen</button>';
   h+='<button class="kdBtn" id="kdReload" title="Neu laden">↻</button>';
   $('#kdBar').innerHTML=h;
 }
@@ -1480,6 +1480,7 @@ function bind(){
     if(el.id==='kdNew'){newKunde();return}
     if(el.id==='kdEingang'){runEingang();return}
     if(el.id==='kdReset'){runReset();return}
+    if(el.id==='kdBoardSync'){el.disabled=true;el.textContent='Gleiche ab …';var bs=await call('kunden_board_sync',{});el.disabled=false;el.textContent='Board abgleichen';msg(bs.ok?(bs.angelegt+' Aufgabe(n) neu angelegt, '+bs.vorhanden+' gab es schon'+(bs.fehler?', '+bs.fehler+' Fehler':'')):(bs.message||'Abgleich fehlgeschlagen'),!bs.ok);return}
     if(el.id==='kdReload'){if(await load())render();return}
     if((x=el.closest('[data-filter]'))){S.filter=x.dataset.filter;render();return}
     if((x=el.closest('tr.row,.kdFaellig .it'))){openKunde(x.dataset.id);return}
