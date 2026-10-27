@@ -1535,7 +1535,7 @@ function renderList(){
   $('#maList').innerHTML='<table class="maTable"><thead><tr><th>Benutzername</th><th>Anzeigename</th><th>Rolle</th><th>Status</th><th>Angelegt</th><th></th></tr></thead><tbody>'+S.users.map(function(u){
     var self=u.username===me(),canReset=u.role==='user'||isSuper()||self;
     return '<tr class="'+(u.active?'':'off')+'"><td><b>'+esc(u.username)+'</b>'+(self?' <span class="maChip">Sie</span>':'')+'</td><td>'+esc(u.display_name)+'</td><td>'+esc(ROLLE[u.role]||u.role)+'</td><td>'+(u.active?'<span class="maChip ok">aktiv</span>':'<span class="maChip off">deaktiviert</span>')+'</td><td>'+esc(fmt(u.created_at))+'</td><td class="maAct">'+
-      (canReset?'<button class="maBtn" data-reset="'+esc(u.username)+'">Neuer QR-Code</button>':'')+(self?'':'<button class="maBtn'+(u.active?' danger':'')+'" data-active="'+esc(u.username)+'" data-to="'+(u.active?'0':'1')+'">'+(u.active?'Deaktivieren':'Aktivieren')+'</button>')+'</td></tr>';
+      (canReset?'<button class="maBtn" data-reset="'+esc(u.username)+'">Neuer QR-Code</button>':'')+(self?'':'<button class="maBtn'+(u.active?' danger':'')+'" data-active="'+esc(u.username)+'" data-to="'+(u.active?'0':'1')+'">'+(u.active?'Deaktivieren':'Aktivieren')+'</button>')+(self||u.role==='superadmin'||(u.role==='admin'&&!isSuper())?'':'<button class="maBtn danger" data-del="'+esc(u.username)+'" title="Konto endgültig löschen">Löschen</button>')+'</td></tr>';
   }).join('')+'</tbody></table>';
 }
 function qrHtml(uri){
@@ -1563,6 +1563,13 @@ function bind(){
       x.disabled=true;var r2=await call('users_reset_totp',{username:x.dataset.reset});x.disabled=false;
       if(!r2.ok){msg(r2.message||'Neuer Code konnte nicht erzeugt werden.',true);return}
       zeigeQr('Neuer QR-Code',r2);return;
+    }
+    if((x=el.closest('[data-del]'))){
+      var nm=x.dataset.del,eing=prompt('Konto „'+nm+'“ ENDGÜLTIG löschen?\n\nDie Person kann sich danach nicht mehr anmelden; Einträge im Verlauf behalten den Namen. Zum Bestätigen den Benutzernamen eintippen:');
+      if(eing===null)return;
+      x.disabled=true;var r4=await call('users_delete',{username:nm,bestaetigung:String(eing).trim()});
+      if(!r4.ok){msg(r4.message||'Konto konnte nicht gelöscht werden.',true);x.disabled=false;return}
+      msg('Konto „'+nm+'“ gelöscht');load();return;
     }
     if((x=el.closest('[data-active]'))){
       var an=x.dataset.to==='1';
