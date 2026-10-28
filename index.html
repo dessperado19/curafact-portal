@@ -49,6 +49,7 @@ button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
   </main>
 </div>
 <script src="assets/lib/pdf-lib.min.js"></script>
+<script src="cf-aufnahme-druck.js?v=1"></script>
 <script src="assets/lib/qrcode.min.js"></script>
 <!--NW:START-->
 <script>
@@ -1194,7 +1195,7 @@ function field(id,label,val,extra){return'<div class="'+((extra&&extra.wide)?'wi
 function draw(){
   var c=S.cur,d=c.data;
   var h='<div class="kdModalBg" id="kdBg"><div class="kdModal">';
-  h+='<div class="kdHead"><h3>'+(c.isNew?'Neuer Kunde':esc(d.pflege_name||''))+'</h3>'+(c.aktiv?'':'<span class="kdChip">inaktiv</span>')+'<button class="kdBtn primary" id="kdSave">Speichern</button><button class="kdBtn" id="kdClose">Schließen</button></div>';
+  h+='<div class="kdHead"><h3>'+(c.isNew?'Neuer Kunde':esc(d.pflege_name||''))+'</h3>'+(c.aktiv?'':'<span class="kdChip">inaktiv</span>')+'<button class="kdBtn primary" id="kdSave">Speichern</button><button class="kdBtn" id="kdAufnDruck" title="Ausgefüllten Aufnahmebogen drucken / als PDF sichern">Aufnahmebogen drucken</button><button class="kdBtn" id="kdClose">Schließen</button></div>';
   h+='<datalist id="kdKassen">'+KASSEN.map(function(k){return'<option value="'+esc(k)+'">'}).join('')+'</datalist>';
   h+='<div class="kdGrid">'+field('f_name','Name der pflegebedürftigen Person',d.pflege_name,{wide:1})+field('f_geb','Geburtsdatum (TT.MM.JJJJ)',d.pflege_geburtsdatum)+field('f_kvnr','Versichertennummer',d.pflege_kvnr)+field('f_kasse','Pflegekasse',d.pflege_kasse,{list:'kdKassen'})+field('f_anschr','Anschrift',d.pflege_anschrift,{wide:1})+'</div>';
   h+='<div class="kdRow"><label class="k" style="display:flex;gap:6px;align-items:center;text-transform:none;font-size:14px;color:var(--k-text)"><input type="checkbox" id="f_ber"'+(d.pflegeberatung_kunde?' checked':'')+' style="width:auto"> Beratungskunde (§ 37 Abs. 3)</label></div>';
@@ -1463,6 +1464,7 @@ function bind(){
   root.addEventListener('click',async function(e){
     var el=e.target,x;
     if(S.cur&&$('#kdBg')&&$('#kdModalHost').contains(el)){
+      if(el.id==='kdAufnDruck'){collect();CFAufnahmeDruck.drucken(S.cur.data);return}
       if(el.id==='kdClose'||el.id==='kdBg'){closeKunde();return}
       if(el.id==='kdSave'){save();return}
       if(el.id==='pgAdd'){collect();S.cur.data.pflegegrade.push({stufe:2,von:'',bis:'',fortlaufend:true,entlastung_genommen:false});draw();return}
