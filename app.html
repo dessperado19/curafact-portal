@@ -1100,6 +1100,7 @@ window.BD=BD;
 .kdBes{border:1px solid var(--k-border);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:#fbfdff}.kdBes .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.kdBes label{margin-bottom:2px}
 .kdSig{display:block;max-height:90px;max-width:100%;background:#fff;border:1px dashed var(--k-border);border-radius:10px;padding:6px}
 .kdRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.kdJ{margin:6px 0}.kdJy{width:48px;color:var(--k-navy,#0F3F7A)}.kdJ select{width:auto;min-width:170px}
 .kdToast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0b457f;color:#fff;border-radius:12px;padding:10px 16px;z-index:100001;font-weight:700;max-width:90vw}.kdToast.err{background:#b91c1c}
 .kdProg{height:10px;background:#e3edf4;border-radius:99px;overflow:hidden;margin:10px 0}.kdProg i{display:block;height:100%;background:var(--k-blue);width:0}
 .kdBox{background:#f2f6f9;border-radius:10px;padding:10px;font-size:12px;max-height:160px;overflow:auto;white-space:pre-wrap}
@@ -1192,12 +1193,35 @@ function newKunde(){
   draw();
 }
 function field(id,label,val,extra){return'<div class="'+((extra&&extra.wide)?'wide':'')+'"><label>'+label+'</label><input type="text" id="'+id+'" value="'+esc(val||'')+'"'+((extra&&extra.list)?' list="'+extra.list+'"':'')+((extra&&extra.ph)?' placeholder="'+extra.ph+'"':'')+'></div>'}
+var JAHR0=2022;
+function jahreListe(){var o=[],h=new Date().getFullYear();for(var y=JAHR0;y<=h;y++)o.push(y);return o}
+function hPrefix(i){return i===1?'hilfe':'hilfe'+i}
+function hMax(d){var m=0;for(var i=1;i<=6;i++){var p=hPrefix(i);if(d[p+'_name']||d[p+'_anschrift']||d[p+'_geburtsdatum']||d[p+'_telefon']||d[p+'_sig_dataurl'])m=i}return m}
+function optHtml(list,sel){return list.map(function(o){return'<option value="'+o[0]+'"'+(String(sel)===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')}
+var ST_OPT=[['','– nicht angegeben'],['g','genommen'],['n','nicht genommen']];
+function entHtml(d){
+  var saved=(d.entlastung_jahre&&typeof d.entlastung_jahre==='object')?d.entlastung_jahre:{};
+  return jahreListe().map(function(y){var s=saved[y],st=(s&&typeof s==='object')?(s.genommen===false?'n':'g'):'';
+    return'<div class="kdRow kdJ" data-ej="'+y+'"><b class="kdJy">'+y+'</b><select data-e="st">'+optHtml(ST_OPT,st)+'</select><input type="text" data-e="notiz" placeholder="Weiteres (Zeitraum, Betrag, Anbieter …)" value="'+esc((s&&s.notiz)||'')+'" style="flex:1;min-width:160px"></div>'}).join('');
+}
+function vpHtml(d){
+  var list=Array.isArray(d.verhinderungspflege)?d.verhinderungspflege:[];
+  return jahreListe().map(function(y){var r=list.filter(function(x){return parseInt(x.jahr,10)===y})[0]||null,st=r?(r.genommen?'g':'n'):'';
+    return'<div class="kdRow kdJ" data-vj="'+y+'"><b class="kdJy">'+y+'</b><select data-v="st">'+optHtml(ST_OPT,st)+'</select><input type="text" data-v="betrag" placeholder="Betrag €" value="'+esc((r&&r.genommen&&r.betrag)||'')+'" style="width:90px"><input type="text" data-v="start" placeholder="von TT.MM.JJJJ" value="'+esc((r&&r.genommen&&r.start)||'')+'" style="width:130px"><input type="text" data-v="ende" placeholder="bis TT.MM.JJJJ" value="'+esc((r&&r.genommen&&r.ende)||'')+'" style="width:130px"></div>'}).join('');
+}
+function helferHtml(c,d){
+  var n=Math.min(6,Math.max(c.hN||1,hMax(d)||1)),h='';
+  for(var i=1;i<=n;i++){var p=hPrefix(i);
+    h+=(n>1?'<div class="kdLog" style="margin-top:8px"><b>'+i+'. Nachbarschaftshilfe</b></div>':'')+'<div class="kdGrid" data-hi="'+i+'">'+field('f_h'+i+'_name','Name',d[p+'_name'])+field('f_h'+i+'_geb','Geburtsdatum',d[p+'_geburtsdatum'])+field('f_h'+i+'_anschr','Anschrift',d[p+'_anschrift'],{wide:1})+field('f_h'+i+'_tel','Telefon',d[p+'_telefon'])+'</div>';
+  }
+  return {html:h,n:n};
+}
 function draw(){
   var c=S.cur,d=c.data;
   var h='<div class="kdModalBg" id="kdBg"><div class="kdModal">';
   h+='<div class="kdHead"><h3>'+(c.isNew?'Neuer Kunde':esc(d.pflege_name||''))+'</h3>'+(c.aktiv?'':'<span class="kdChip">inaktiv</span>')+'<button class="kdBtn primary" id="kdSave">Speichern</button><button class="kdBtn" id="kdAufnDruck" title="Ausgefüllten Aufnahmebogen drucken / als PDF sichern">Aufnahmebogen drucken</button><button class="kdBtn" id="kdClose">Schließen</button></div>';
   h+='<datalist id="kdKassen">'+KASSEN.map(function(k){return'<option value="'+esc(k)+'">'}).join('')+'</datalist>';
-  h+='<div class="kdGrid">'+field('f_name','Name der pflegebedürftigen Person',d.pflege_name,{wide:1})+field('f_geb','Geburtsdatum (TT.MM.JJJJ)',d.pflege_geburtsdatum)+field('f_kvnr','Versichertennummer',d.pflege_kvnr)+field('f_kasse','Pflegekasse',d.pflege_kasse,{list:'kdKassen'})+field('f_anschr','Anschrift',d.pflege_anschrift,{wide:1})+'</div>';
+  h+='<div class="kdGrid">'+field('f_name','Name der pflegebedürftigen Person',d.pflege_name,{wide:1})+field('f_geb','Geburtsdatum (TT.MM.JJJJ)',d.pflege_geburtsdatum)+field('f_kvnr','Versichertennummer',d.pflege_kvnr)+field('f_kasse','Pflegekasse',d.pflege_kasse,{list:'kdKassen'})+field('f_tel','Telefon',d.pflege_telefon)+field('f_anschr','Anschrift',d.pflege_anschrift,{wide:1})+'</div>';
   h+='<div class="kdRow"><label class="k" style="display:flex;gap:6px;align-items:center;text-transform:none;font-size:14px;color:var(--k-text)"><input type="checkbox" id="f_ber"'+(d.pflegeberatung_kunde?' checked':'')+' style="width:auto"> Beratungskunde (§ 37 Abs. 3)</label></div>';
   h+='<div class="kdSec"><div class="kdSecHead"><h4>Pflegegrad</h4><button class="kdBtn" id="pgAdd">+ Pflegegrad</button></div><div id="kdPgs">';
   (d.pflegegrade||[]).forEach(function(p,i){
@@ -1205,7 +1229,12 @@ function draw(){
   });
   if(!(d.pflegegrade||[]).length)h+='<div class="kdLog">Noch kein Pflegegrad eingetragen.</div>';
   h+='</div></div>';
-  h+='<div class="kdSec"><div class="kdSecHead"><h4>Angehörige / Bevollmächtigte Person</h4></div><div class="kdGrid">'+field('f_pname','Name',d.person_name)+field('f_pgeb','Geburtsdatum',d.person_geburtsdatum)+field('f_panschr','Anschrift',d.person_anschrift,{wide:1})+'</div></div>';
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Angehörige / Bevollmächtigte Person</h4></div><div class="kdGrid">'+field('f_pname','Name',d.person_name)+field('f_pgeb','Geburtsdatum',d.person_geburtsdatum)+field('f_pverh','Verhältnis (z. B. Ehefrau, Sohn)',d.person_verhaeltnis)+field('f_panschr','Anschrift',d.person_anschrift,{wide:1})+'</div></div>';
+  var hh=helferHtml(c,d);
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Nachbarschaftshilfe <span class="kdLog">(optional)</span></h4>'+(hh.n<6?'<button class="kdBtn" id="hAdd">+ weitere Nachbarschaftshilfe</button>':'')+'</div>'+hh.html+'</div>';
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Entlastungsbetrag (§ 45b SGB XI) <span class="kdLog">– je Jahr, optional</span></h4></div>'+entHtml(d)+'</div>';
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Verhinderungspflege / Kurzzeitpflege <span class="kdLog">– je Jahr, optional</span></h4></div>'+vpHtml(d)+'</div>';
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Zusätzliche Notizen / Informationen</h4></div><textarea id="f_anotiz" rows="3" style="width:100%" placeholder="z. B. Notizen vom Aufnahmebogen">'+esc(d.aufnahme_notizen||'')+'</textarea></div>';
   var besuche=Array.isArray(d.beratungsbesuche)?d.beratungsbesuche:[];
   h+='<div class="kdSec"><div class="kdSecHead"><h4>Beratungsbesuche ('+besuche.length+')</h4>'+(c.isNew?'':'<a class="kdBtn primary" style="text-decoration:none" href="besuch.html?kunde='+esc(c.id)+'">+ Neuer Beratungsbesuch</a>')+'</div>';
   if(!besuche.length)h+='<div class="kdLog">Noch keine Besuche erfasst.</div>';
@@ -1252,6 +1281,31 @@ function collect(){
   var v=function(id){return($('#'+id)||{}).value||''};
   d.pflege_name=v('f_name').trim();d.pflege_geburtsdatum=v('f_geb').trim();d.pflege_kvnr=v('f_kvnr').trim();d.pflege_kasse=v('f_kasse').trim();d.pflege_anschrift=v('f_anschr').trim();
   d.person_name=v('f_pname').trim();d.person_geburtsdatum=v('f_pgeb').trim();d.person_anschrift=v('f_panschr').trim();
+  var set=function(k,val){if(val)d[k]=val;else delete d[k]};
+  set('pflege_telefon',v('f_tel').trim());set('person_verhaeltnis',v('f_pverh').trim());set('aufnahme_notizen',v('f_anotiz').trim());
+  S.root.querySelectorAll('[data-hi]').forEach(function(g){
+    var i=Number(g.dataset.hi),p=hPrefix(i);
+    set(p+'_name',v('f_h'+i+'_name').trim());set(p+'_geburtsdatum',v('f_h'+i+'_geb').trim());set(p+'_anschrift',v('f_h'+i+'_anschr').trim());set(p+'_telefon',v('f_h'+i+'_tel').trim());
+  });
+  if(S.root.querySelector('[data-hi]'))c.hN=Math.max(1,S.root.querySelectorAll('[data-hi]').length);
+  if(S.root.querySelector('[data-ej]')){
+    var ent={},alt=(d.entlastung_jahre&&typeof d.entlastung_jahre==='object')?d.entlastung_jahre:{},ys=jahreListe();
+    Object.keys(alt).forEach(function(y){if(ys.indexOf(Number(y))<0)ent[y]=alt[y]});
+    S.root.querySelectorAll('[data-ej]').forEach(function(row){
+      var st=row.querySelector('[data-e=st]').value;if(!st)return;
+      var o={genommen:st==='g'},n=row.querySelector('[data-e=notiz]').value.trim();if(n)o.notiz=n;ent[row.dataset.ej]=o});
+    if(Object.keys(ent).length)d.entlastung_jahre=ent;else delete d.entlastung_jahre;
+  }
+  if(S.root.querySelector('[data-vj]')){
+    var ys2=jahreListe(),vp=(Array.isArray(d.verhinderungspflege)?d.verhinderungspflege:[]).filter(function(x){return ys2.indexOf(parseInt(x.jahr,10))<0});
+    S.root.querySelectorAll('[data-vj]').forEach(function(row){
+      var st=row.querySelector('[data-v=st]').value;if(!st)return;
+      var o={jahr:String(row.dataset.vj),genommen:st==='g'};
+      if(st==='g'){['betrag','start','ende'].forEach(function(k){var x=row.querySelector('[data-v='+k+']').value.trim();if(x)o[k]=x})}
+      vp.push(o)});
+    vp.sort(function(a,b){return parseInt(a.jahr,10)-parseInt(b.jahr,10)});
+    if(vp.length)d.verhinderungspflege=vp;else delete d.verhinderungspflege;
+  }
   d.pflegeberatung_kunde=!!($('#f_ber')||{}).checked;
   if($('#kdNoteTxt'))c.noteDraft=$('#kdNoteTxt').value;
   var pgs=[];
@@ -1464,6 +1518,7 @@ function bind(){
   root.addEventListener('click',async function(e){
     var el=e.target,x;
     if(S.cur&&$('#kdBg')&&$('#kdModalHost').contains(el)){
+      if(el.id==='hAdd'){collect();S.cur.hN=Math.min(6,(S.cur.hN||1)+1);draw();return}
       if(el.id==='kdAufnDruck'){collect();CFAufnahmeDruck.drucken(S.cur.data);return}
       if(el.id==='kdClose'||el.id==='kdBg'){closeKunde();return}
       if(el.id==='kdSave'){save();return}
