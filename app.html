@@ -1226,21 +1226,6 @@ function draw(){
   var c=S.cur,d=c.data;
   var h='<div class="kdModalBg" id="kdBg"><div class="kdModal">';
   h+='<div class="kdHead"><h3>'+(c.isNew?'Neuer Kunde':esc(d.pflege_name||''))+'</h3>'+(c.aktiv?'':'<span class="kdChip">inaktiv</span>')+'<button class="kdBtn primary" id="kdSave">Speichern</button><button class="kdBtn" id="kdAufnDruck" title="Ausgefüllten Aufnahmebogen drucken / als PDF sichern">Aufnahmebogen drucken</button><button class="kdBtn" id="kdClose">Schließen</button></div>';
-  h+='<datalist id="kdKassen">'+KASSEN.map(function(k){return'<option value="'+esc(k)+'">'}).join('')+'</datalist>';
-  h+='<div class="kdGrid">'+field('f_name','Name der pflegebedürftigen Person',d.pflege_name,{wide:1})+field('f_geb','Geburtsdatum (TT.MM.JJJJ)',d.pflege_geburtsdatum)+field('f_kvnr','Versichertennummer',d.pflege_kvnr)+field('f_kasse','Pflegekasse',d.pflege_kasse,{list:'kdKassen'})+field('f_tel','Telefon',d.pflege_telefon)+field('f_anschr','Anschrift',d.pflege_anschrift,{wide:1})+'</div>';
-  h+='<div class="kdRow"><label class="k" style="display:flex;gap:6px;align-items:center;text-transform:none;font-size:14px;color:var(--k-text)"><input type="checkbox" id="f_ber"'+(d.pflegeberatung_kunde?' checked':'')+' style="width:auto"> Beratungskunde (§ 37 Abs. 3)</label></div>';
-  h+='<div class="kdSec"><div class="kdSecHead"><h4>Pflegegrad</h4><button class="kdBtn" id="pgAdd">+ Pflegegrad</button></div><div id="kdPgs">';
-  (d.pflegegrade||[]).forEach(function(p,i){
-    h+='<div class="kdPg" data-i="'+i+'"><select data-pg="stufe">'+[1,2,3,4,5].map(function(n){return'<option'+(String(p.stufe)===String(n)?' selected':'')+'>'+n+'</option>'}).join('')+'</select><input type="text" data-pg="von" placeholder="seit TT.MM.JJJJ" value="'+esc(p.von||'')+'"><input type="text" data-pg="bis" placeholder="bis (leer = laufend)" value="'+esc(p.bis||'')+'"><label class="k"><input type="checkbox" data-pg="fortlaufend"'+(p.fortlaufend?' checked':'')+'> fortlaufend</label><label class="k"><input type="checkbox" data-pg="entlastung_genommen"'+(p.entlastung_genommen?' checked':'')+'> Entlastungsbetrag genommen</label><button class="kdX" data-pgdel="'+i+'">×</button></div>';
-  });
-  if(!(d.pflegegrade||[]).length)h+='<div class="kdLog">Noch kein Pflegegrad eingetragen.</div>';
-  h+='</div></div>';
-  h+='<div class="kdSec"><div class="kdSecHead"><h4>Entlastungsbetrag (§ 45b SGB XI) <span class="kdLog">– je Jahr, optional</span></h4></div>'+entHtml(d)+'</div>';
-  h+='<div class="kdSec"><div class="kdSecHead"><h4>Angehörige / Bevollmächtigte Person</h4></div><div class="kdGrid">'+field('f_pname','Name',d.person_name)+field('f_pgeb','Geburtsdatum',d.person_geburtsdatum)+field('f_pverh','Verhältnis (z. B. Ehefrau, Sohn)',d.person_verhaeltnis)+field('f_panschr','Anschrift',d.person_anschrift,{wide:1})+'</div></div>';
-  var hh=helferHtml(c,d);
-  h+='<div class="kdSec"><div class="kdSecHead"><h4>Nachbarschaftshilfe <span class="kdLog">(optional)</span></h4>'+(hh.n<6?'<button class="kdBtn" id="hAdd">+ weitere Nachbarschaftshilfe</button>':'')+'</div>'+hh.html+'</div>';
-  h+='<div class="kdSec"><div class="kdSecHead"><h4>Verhinderungspflege / Kurzzeitpflege <span class="kdLog">– je Jahr, optional</span></h4></div>'+vpHtml(d)+'</div>';
-  h+='<div class="kdSec"><div class="kdSecHead"><h4>Zusätzliche Notizen / Informationen</h4></div><textarea id="f_anotiz" rows="3" style="width:100%" placeholder="z. B. Notizen vom Aufnahmebogen">'+esc(d.aufnahme_notizen||'')+'</textarea></div>';
   var besuche=Array.isArray(d.beratungsbesuche)?d.beratungsbesuche:[];
   h+='<div class="kdSec"><div class="kdSecHead"><h4>Beratungsbesuche ('+besuche.length+')</h4>'+(c.isNew?'':'<a class="kdBtn primary" style="text-decoration:none" href="besuch.html?kunde='+esc(c.id)+'">+ Neuer Beratungsbesuch</a>')+'</div>';
   if(!besuche.length)h+='<div class="kdLog">Noch keine Besuche erfasst.</div>';
@@ -1257,6 +1242,22 @@ function draw(){
   var ke=kasseEintrag(d.pflege_kasse);
   if(ke&&(ke.hinweis||ke.url||ke.weg))h+='<div class="kdHint"><b>Versandweg '+esc(ke.name||d.pflege_kasse)+':</b> '+esc(ke.hinweis||'')+(ke.url?' <a href="'+esc(ke.url)+'" target="_blank" rel="noopener">Portal öffnen</a>':'')+(ke.anschrift?'<br>Postanschrift: '+esc(ke.anschrift):'')+'</div>';
   h+='</div>';
+  h+='<div style="height:18px"></div>';
+  h+='<datalist id="kdKassen">'+KASSEN.map(function(k){return'<option value="'+esc(k)+'">'}).join('')+'</datalist>';
+  h+='<div class="kdGrid">'+field('f_name','Name der pflegebedürftigen Person',d.pflege_name,{wide:1})+field('f_geb','Geburtsdatum (TT.MM.JJJJ)',d.pflege_geburtsdatum)+field('f_kvnr','Versichertennummer',d.pflege_kvnr)+field('f_kasse','Pflegekasse',d.pflege_kasse,{list:'kdKassen'})+field('f_tel','Telefon',d.pflege_telefon)+field('f_anschr','Anschrift',d.pflege_anschrift,{wide:1})+'</div>';
+  h+='<div class="kdRow"><label class="k" style="display:flex;gap:6px;align-items:center;text-transform:none;font-size:14px;color:var(--k-text)"><input type="checkbox" id="f_ber"'+(d.pflegeberatung_kunde?' checked':'')+' style="width:auto"> Beratungskunde (§ 37 Abs. 3)</label></div>';
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Pflegegrad</h4><button class="kdBtn" id="pgAdd">+ Pflegegrad</button></div><div id="kdPgs">';
+  (d.pflegegrade||[]).forEach(function(p,i){
+    h+='<div class="kdPg" data-i="'+i+'"><select data-pg="stufe">'+[1,2,3,4,5].map(function(n){return'<option'+(String(p.stufe)===String(n)?' selected':'')+'>'+n+'</option>'}).join('')+'</select><input type="text" data-pg="von" placeholder="seit TT.MM.JJJJ" value="'+esc(p.von||'')+'"><input type="text" data-pg="bis" placeholder="bis (leer = laufend)" value="'+esc(p.bis||'')+'"><label class="k"><input type="checkbox" data-pg="fortlaufend"'+(p.fortlaufend?' checked':'')+'> fortlaufend</label><label class="k"><input type="checkbox" data-pg="entlastung_genommen"'+(p.entlastung_genommen?' checked':'')+'> Entlastungsbetrag genommen</label><button class="kdX" data-pgdel="'+i+'">×</button></div>';
+  });
+  if(!(d.pflegegrade||[]).length)h+='<div class="kdLog">Noch kein Pflegegrad eingetragen.</div>';
+  h+='</div></div>';
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Entlastungsbetrag (§ 45b SGB XI) <span class="kdLog">– je Jahr, optional</span></h4></div>'+entHtml(d)+'</div>';
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Angehörige / Bevollmächtigte Person</h4></div><div class="kdGrid">'+field('f_pname','Name',d.person_name)+field('f_pgeb','Geburtsdatum',d.person_geburtsdatum)+field('f_pverh','Verhältnis (z. B. Ehefrau, Sohn)',d.person_verhaeltnis)+field('f_panschr','Anschrift',d.person_anschrift,{wide:1})+'</div></div>';
+  var hh=helferHtml(c,d);
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Nachbarschaftshilfe <span class="kdLog">(optional)</span></h4>'+(hh.n<6?'<button class="kdBtn" id="hAdd">+ weitere Nachbarschaftshilfe</button>':'')+'</div>'+hh.html+'</div>';
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Verhinderungspflege / Kurzzeitpflege <span class="kdLog">– je Jahr, optional</span></h4></div>'+vpHtml(d)+'</div>';
+  h+='<div class="kdSec"><div class="kdSecHead"><h4>Zusätzliche Notizen / Informationen</h4></div><textarea id="f_anotiz" rows="3" style="width:100%" placeholder="z. B. Notizen vom Aufnahmebogen">'+esc(d.aufnahme_notizen||'')+'</textarea></div>';
   if(d.pflege_sig_dataurl)h+='<div class="kdSec"><div class="kdSecHead"><h4>Unterschrift (Stammdaten)</h4></div><img class="kdSig" src="'+esc(d.pflege_sig_dataurl)+'" alt="Unterschrift"></div>';
   if(!c.isNew){
     h+='<div class="kdSec"><div class="kdSecHead"><h4>Dokumente</h4><div class="kdRow"><select id="docArt" style="width:auto">'+Object.keys(ARTEN).map(function(k){return'<option value="'+k+'">'+ARTEN[k]+'</option>'}).join('')+'</select><label class="kdBtn" style="cursor:pointer">+ Datei<input type="file" id="docFile" multiple style="display:none"></label></div></div><div class="kdRow" style="margin-bottom:8px"><button class="kdBtn" data-unt="datenschutz">Datenschutzinformation erstellen</button><button class="kdBtn" data-unt="vereinbarung">Beratungsvereinbarung erstellen</button>'+(H().isAdmin?'<button class="kdBtn" data-unt="vollmacht">Vollmacht Beratungsperson erstellen</button>':'')+'</div>';
