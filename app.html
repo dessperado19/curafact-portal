@@ -1252,11 +1252,7 @@ function draw(){
   });
   if(!(d.pflegegrade||[]).length)h+='<div class="kdLog">Noch kein Pflegegrad eingetragen.</div>';
   h+='</div></div>';
-  h+='<div class="kdSec"><div class="kdSecHead"><h4>Entlastungsbetrag (§ 45b SGB XI) <span class="kdLog">– je Jahr, optional</span></h4></div>'+entHtml(d)+'</div>';
   h+='<div class="kdSec"><div class="kdSecHead"><h4>Angehörige / Bevollmächtigte Person</h4></div><div class="kdGrid">'+field('f_pname','Name',d.person_name)+field('f_pgeb','Geburtsdatum',d.person_geburtsdatum)+field('f_pverh','Verhältnis (z. B. Ehefrau, Sohn)',d.person_verhaeltnis)+field('f_panschr','Anschrift',d.person_anschrift,{wide:1})+'</div></div>';
-  var hh=helferHtml(c,d);
-  h+='<div class="kdSec"><div class="kdSecHead"><h4>Nachbarschaftshilfe <span class="kdLog">(optional)</span></h4>'+(hh.n<6?'<button class="kdBtn" id="hAdd">+ weitere Nachbarschaftshilfe</button>':'')+'</div>'+hh.html+'</div>';
-  h+='<div class="kdSec"><div class="kdSecHead"><h4>Verhinderungspflege / Kurzzeitpflege <span class="kdLog">– je Jahr, optional</span></h4></div>'+vpHtml(d)+'</div>';
   h+='<div class="kdSec"><div class="kdSecHead"><h4>Zusätzliche Notizen / Informationen</h4></div><textarea id="f_anotiz" rows="3" style="width:100%" placeholder="z. B. Notizen vom Aufnahmebogen">'+esc(d.aufnahme_notizen||'')+'</textarea></div>';
   if(d.pflege_sig_dataurl)h+='<div class="kdSec"><div class="kdSecHead"><h4>Unterschrift (Stammdaten)</h4></div><img class="kdSig" src="'+esc(d.pflege_sig_dataurl)+'" alt="Unterschrift"></div>';
   if(!c.isNew){
