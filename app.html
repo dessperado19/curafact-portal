@@ -49,7 +49,7 @@ button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
   </main>
 </div>
 <script src="assets/lib/pdf-lib.min.js"></script>
-<script src="cf-aufnahme-druck.js?v=2"></script>
+<script src="cf-aufnahme-druck.js?v=3"></script>
 <script src="assets/lib/qrcode.min.js"></script>
 <!--NW:START-->
 <script>
@@ -1544,7 +1544,7 @@ function bind(){
       return;
     }
     if(el.id==='kdNew'){newKunde();return}
-    if(el.id==='kdAufnPdf'){window.open('Neukunden-Aufnahmebogen.pdf','_blank');return}
+    if(el.id==='kdAufnPdf'){window.open('Neukunden-Aufnahmebogen.pdf?v=2','_blank');return}
     if(el.id==='kdEingang'){runEingang();return}
     if(el.id==='kdReset'){runReset();return}
     if(el.id==='kdBoardSync'){el.disabled=true;el.textContent='Gleiche ab …';var bs=await call('kunden_board_sync',{});el.disabled=false;el.textContent='Board abgleichen';msg(bs.ok?(bs.angelegt+' Aufgabe(n) neu angelegt, '+bs.vorhanden+' gab es schon'+(bs.fehler?', '+bs.fehler+' Fehler':'')):(bs.message||'Abgleich fehlgeschlagen'),!bs.ok);return}
