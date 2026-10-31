@@ -1445,15 +1445,33 @@ async function idbSet(k,v){try{var db=await idb();await new Promise(function(res
 function gesehen(){try{return JSON.parse(localStorage.getItem('kd_eingang')||'{}')}catch(e){return {}}}
 function gesehenSpeichern(m){try{localStorage.setItem('kd_eingang',JSON.stringify(m))}catch(e){}}
 async function dateienAusOrdner(h){var out=[];for await(var e of h.values()){if(e.kind==='file'&&/\.json$/i.test(e.name)&&e.name.charAt(0)!=='_')out.push(await e.getFile())}return out}
+/* vorhandene Akten bleiben unverändert – nur Beratungsbesuche aus Studio, die in der Akte noch fehlen (Datum + Beginn), werden ergänzt */
+function nkey(s){return String(s||'').toLowerCase().replace(/\s+/g,' ').trim()}
+async function besucheNachtragen(items){
+  var n=0;
+  for(var i=0;i<items.length;i++){
+    var it=items[i],bs=Array.isArray(it.beratungsbesuche)?it.beratungsbesuche:[];if(!bs.length)continue;
+    var e=S.list.filter(function(k){return nkey(k.name)===nkey(it.pflege_name)})[0];if(!e)continue;
+    var g=await call('kunden_get',{id:e.id});if(!g.ok||!g.kunde)continue;
+    var ver=g.kunde.version,have=Array.isArray(g.kunde.data&&g.kunde.data.beratungsbesuche)?g.kunde.data.beratungsbesuche:[];
+    var keys=have.map(function(b){return (b.datum||'')+'|'+(b.uhrzeit_von||'')});
+    for(var j=0;j<bs.length;j++){
+      var b=bs[j];if(!b||keys.indexOf((b.datum||'')+'|'+(b.uhrzeit_von||''))>=0)continue;
+      var r=await call('kunden_besuch_save',{kunde_id:e.id,besuch:b,index:null,version:ver});
+      if(r.ok&&r.kunde){ver=r.kunde.version;n++;keys.push((b.datum||'')+'|'+(b.uhrzeit_von||''))}else break;
+    }
+  }
+  return n;
+}
 /* verarbeitet Dateien: unveränderte (Name+Datum+Größe) werden übersprungen, neue Namen als Akte angelegt, vorhandene bleiben unverändert */
 async function eingangVerarbeiten(files,out){
   var seen=gesehen(),items=[],keys=[],skippedSeen=0;
   for(var i=0;i<files.length;i++){
-    var f=files[i],key=f.name+'|'+f.lastModified+'|'+f.size;
+    var f=files[i],key='v2|'+f.name+'|'+f.lastModified+'|'+f.size;
     if(seen[key]){skippedSeen++;continue}
     try{var j=JSON.parse(await f.text());var x=slim(j);if(x.pflege_name){items.push(x);keys.push(key)}}catch(err){if(out)out.innerHTML+='<div class="kdLog">'+esc(f.name)+': keine gültige JSON-Datei</div>'}
   }
-  var imp=0,skip=0,fail=[];
+  var imp=0,skip=0,fail=[],nachg=0;
   for(var k=0;k<items.length;k+=10){
     if(out)out.innerHTML='<div class="kdProg"><i style="width:'+Math.round(k*100/items.length)+'%"></i></div><div class="kdLog">'+k+' von '+items.length+' …</div>';
     var r=await call('kunden_import',{items:items.slice(k,k+10)});
@@ -1461,13 +1479,14 @@ async function eingangVerarbeiten(files,out){
     imp+=r.imported;skip+=r.skipped;fail=fail.concat(r.failed||[]);
     keys.slice(k,k+10).forEach(function(kk){seen[kk]=1});
   }
+  try{if(items.length){if(out)out.innerHTML='<div class="kdLog">Beratungsbesuche abgleichen …</div>';if(skip)await load();nachg=await besucheNachtragen(items)}}catch(err){}
   gesehenSpeichern(seen);
-  return {neu:imp,vorhanden:skip,fehler:fail,unveraendert:skippedSeen,dateien:files.length};
+  return {neu:imp,vorhanden:skip,fehler:fail,unveraendert:skippedSeen,dateien:files.length,nachgetragen:nachg};
 }
-function eingangText(r){return '<p><b>Fertig.</b> '+r.neu+' neue Akte(n) angelegt'+(r.vorhanden?', '+r.vorhanden+' gab es schon':'')+(r.unveraendert?', '+r.unveraendert+' Datei(en) unverändert seit der letzten Prüfung':'')+(r.fehler.length?', '+r.fehler.length+' fehlgeschlagen':'')+'.</p>'+(r.fehler.length?'<div class="kdBox">'+esc(r.fehler.join('\n'))+'</div>':'')}
+function eingangText(r){return '<p><b>Fertig.</b> '+r.neu+' neue Akte(n) angelegt'+(r.vorhanden?', '+r.vorhanden+' gab es schon':'')+(r.nachgetragen?', '+r.nachgetragen+' Beratungsbesuch(e) aus Studio ergänzt':'')+(r.unveraendert?', '+r.unveraendert+' Datei(en) unverändert seit der letzten Prüfung':'')+(r.fehler.length?', '+r.fehler.length+' fehlgeschlagen':'')+'.</p>'+(r.fehler.length?'<div class="kdBox">'+esc(r.fehler.join('\n'))+'</div>':'')}
 async function runEingang(){
   var host=$('#kdModalHost'),hasDir=!!window.showDirectoryPicker,saved=hasDir?await idbGet('eingangOrdner'):null;
-  host.innerHTML='<div class="kdModalBg"><div class="kdModal small"><h3>Eingang aus Studio</h3><p style="color:var(--k-muted)">Studio legt neue Beratungskunden als Dateien im Ordner „Portal_Eingang“ ab (im Ordner Curafact Studio). Hier werden neue Kunden als Akte angelegt; vorhandene Akten bleiben unverändert.</p><div class="kdRow">'+
+  host.innerHTML='<div class="kdModalBg"><div class="kdModal small"><h3>Eingang aus Studio</h3><p style="color:var(--k-muted)">Studio legt neue Beratungskunden als Dateien im Ordner „Portal_Eingang“ ab (im Ordner Curafact Studio). Hier werden neue Kunden als Akte angelegt; vorhandene Akten bleiben unverändert (es werden nur Beratungsbesuche aus Studio ergänzt, die in der Akte noch fehlen).</p><div class="kdRow">'+
     (hasDir?(saved?'<button class="kdBtn primary" id="kdEinGemerkt">Gemerkten Ordner prüfen</button>':'')+'<button class="kdBtn'+(saved?'':' primary')+'" id="kdEinOrdner">Ordner wählen</button>':'')+
     '<label class="kdBtn" style="cursor:pointer">Dateien wählen<input type="file" id="kdEinFile" accept=".json,application/json" multiple style="display:none"></label><button class="kdBtn" id="kdEinClose">Schließen</button></div>'+
     (hasDir?'':'<p class="kdLog" style="margin-top:8px">Hinweis: Dieser Browser kann keinen Ordner dauerhaft verbinden (nur Chrome/Edge). Wähle im Dateidialog alle Dateien des Ordners (Cmd+A).</p>')+'<div id="kdImpOut" style="margin-top:10px"></div></div></div>';
@@ -1488,7 +1507,7 @@ async function autoEingang(){
     var p=await h.queryPermission({mode:'read'});
     if(p!=='granted'){S.eingangHinweis=true;renderBar();return}
     var r=await eingangVerarbeiten(await dateienAusOrdner(h),null);
-    if(r&&r.neu){msg(r.neu+' neue Beratungskunden aus Studio übernommen');await load();render()}
+    if(r&&(r.neu||r.nachgetragen)){msg((r.neu?r.neu+' neue Beratungskunden aus Studio übernommen':'')+(r.neu&&r.nachgetragen?', ':'')+(r.nachgetragen?r.nachgetragen+' Beratungsbesuch(e) ergänzt':''));await load();render()}
   }catch(e){}
 }
 /* ---------- Kundenstamm zurücksetzen (Admin): erst Sicherung, dann Bestätigung ---------- */
