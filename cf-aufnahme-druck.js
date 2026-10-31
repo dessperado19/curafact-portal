@@ -72,24 +72,23 @@ var CFAufnahmeDruck=(function(){
     '.pg{display:flex;gap:5mm;align-items:center;margin:2mm 0}.pgo{display:inline-flex;gap:2mm;align-items:center}'+
     '.cb{display:inline-block;width:4mm;height:4mm;border:1px solid #16A9BA;border-radius:1mm;text-align:center;line-height:3.6mm;font-size:8pt;color:#0F3F7A;font-weight:700;vertical-align:middle}.cb.on{background:#e6f6f8}'+
     '.tab{width:100%;border-collapse:collapse;margin:1mm 0}.tab th{text-align:left;font-size:7.5pt;color:#4f6a85;font-weight:600;padding:1mm 2mm}.tab td{padding:1.6mm 2mm;border-bottom:1px solid #cfe9ee;height:6.2mm}.tab tr:nth-child(odd) td{background:#f3f9fd}.tab td.j{font-weight:800;color:#0F3F7A}'+
-    '.notiz{min-height:60mm;border:1px solid #16A9BA;border-radius:2mm;padding:2mm;white-space:pre-wrap}'+
+    '.notiz{min-height:18mm;border:1px solid #16A9BA;border-radius:2mm;padding:2mm;white-space:pre-wrap}'+
     '.sigs{display:grid;grid-template-columns:1fr 1fr;gap:6mm}.sig .sb{height:30mm;border:1px solid #16A9BA;border-radius:2mm;display:flex;align-items:center;justify-content:center}.sig img{max-width:100%;max-height:28mm}.sig .sl{font-size:7.5pt;color:#4f6a85;margin:1mm 0 6mm}.ort{border-bottom:1px solid #0F3F7A;height:6mm;font-size:9pt;padding-top:1mm}'+
     '.h2name{font-size:8.5pt;color:#0F3F7A;font-weight:700;margin:3mm 0 1mm}'+
+    '.page{height:296mm;overflow:hidden;padding-bottom:0}.page .logo{height:14mm}.logo img{height:13mm}h2{margin:3.4mm 0 1.4mm}.grid{gap:1.2mm 5mm;margin-bottom:1mm}.v{min-height:6mm;padding:1mm 2mm}.pg{margin:1mm 0}.tab td{padding:1mm 2mm;height:5.4mm}.sig .sb{height:19mm}.sig .sl{margin:1mm 0 3mm}.ort{height:5mm}.sub{margin:0 0 2mm}'+
     '.foot{position:absolute;left:20mm;right:20mm;bottom:8mm;border-top:1px solid #cfe9ee;padding-top:2mm;display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:6mm;font-size:6.5pt;color:#66788a;line-height:1.35}.foot b{color:#0F3F7A}';
 
   function html(d,logoUrl){
-    var foot=function(n){return '<div class="foot"><div><b>Curafact PflegeAbrechnung Direkt UG (haftungsbeschränkt)</b><br>Berliner Str. 36<br>33378 Rheda-Wiedenbrück</div><div>Tel. 05242 182649-0<br>kontakt@curafact.de<br>curafact.de</div><div>Geschäftsführer: Önder Sülüngür<br>Amtsgericht Gütersloh, HRB 14607<br>IK 590537042<span style="float:right">Seite '+n+' von 2</span></div></div>'};
+    var foot=function(n){return '<div class="foot"><div><b>Curafact PflegeAbrechnung Direkt UG (haftungsbeschränkt)</b><br>Berliner Str. 36<br>33378 Rheda-Wiedenbrück</div><div>Tel. 05242 182649-0<br>kontakt@curafact.de<br>curafact.de</div><div>Geschäftsführer: Önder Sülüngür<br>Amtsgericht Gütersloh, HRB 14607<br>IK 590537042<span style="float:right">Seite '+n+' von 1</span></div></div>'};
     var kopf='<div class="bar"></div><div class="logo">'+(logoUrl?'<img src="'+esc(logoUrl)+'" alt="Curafact">':'')+'</div>';
     var p1=kopf+'<h1>Neukunden-Aufnahmebogen</h1><p class="sub">Ausgefüllt aus der Kundenakte'+(d.pflege_name?' – '+esc(d.pflege_name):'')+'. Gedruckt am '+new Date().toLocaleDateString('de-DE')+'.</p>'+
       sec(1,'Pflegebedürftige Person','','<div class="grid">'+f('Name, Vorname',d.pflege_name,8)+f('Geburtsdatum',d.pflege_geburtsdatum,4)+f('Anschrift (Straße, PLZ, Ort)',d.pflege_anschrift,12)+f('Telefon',d.pflege_telefon,4)+f('Pflegekasse',d.pflege_kasse,8)+f('Versichertennummer',d.pflege_kvnr,6)+'</div>')+
       sec(2,'Pflegegrad','(Monat und Jahr genügen)',pflegegradTeil(d))+
       sec(3,'Pflegeperson','(gesetzliche Vertretung / bevollmächtigte Person, falls abweichend)','<div class="grid">'+f('Name, Vorname',d.person_name,8)+f('Geburtsdatum',d.person_geburtsdatum,4)+f('Anschrift (Straße, PLZ, Ort)',d.person_anschrift,8)+f('Verhältnis (z. B. Ehefrau, Sohn)',d.person_verhaeltnis,4)+'</div>')+
-      foot(1);
-    var p2=kopf+
       sec(4,'Zusätzliche Notizen / Informationen','','<div class="notiz">'+esc(d.aufnahme_notizen||'')+'</div>')+
       sec(5,'Unterschrift','','<div class="sigs">'+sigBox(d.pflege_sig_dataurl||'','Unterschrift pflegebedürftige Person / Pflegeperson')+'</div>')+
-      foot(2);
-    return '<div class="page">'+p1+'</div><div class="page">'+p2+'</div>';
+      foot(1);
+    return '<div class="page">'+p1+'</div>';
   }
 
   function drucken(d){
