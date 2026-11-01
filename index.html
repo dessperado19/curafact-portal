@@ -1461,11 +1461,11 @@ async function besucheNachtragen(items){
 }
 /* verarbeitet Dateien: unveränderte (Name+Datum+Größe) werden übersprungen, neue Namen als Akte angelegt, vorhandene bleiben unverändert */
 async function eingangVerarbeiten(files,out){
-  var seen=gesehen(),items=[],keys=[],skippedSeen=0;
+  var seen=gesehen(),items=[],keys=[],skippedSeen=0,cfgs=[];
   for(var i=0;i<files.length;i++){
     var f=files[i],key='v2|'+f.name+'|'+f.lastModified+'|'+f.size;
     if(seen[key]){skippedSeen++;continue}
-    try{var j=JSON.parse(await f.text());var x=slim(j);if(x.pflege_name){items.push(x);keys.push(key)}}catch(err){if(out)out.innerHTML+='<div class="kdLog">'+esc(f.name)+': keine gültige JSON-Datei</div>'}
+    try{var j=JSON.parse(await f.text());if(j&&!Array.isArray(j)&&!j.pflege_name&&(j.textbausteine||j.personen||j.kassen||j.ik)){cfgs.push({cfg:j,key:key});continue}var x=slim(j);if(x.pflege_name){items.push(x);keys.push(key)}}catch(err){if(out)out.innerHTML+='<div class="kdLog">'+esc(f.name)+': keine gültige JSON-Datei</div>'}
   }
   var imp=0,skip=0,fail=[],nachg=0;
   for(var k=0;k<items.length;k+=10){
@@ -1476,10 +1476,15 @@ async function eingangVerarbeiten(files,out){
     keys.slice(k,k+10).forEach(function(kk){seen[kk]=1});
   }
   try{if(items.length){if(out)out.innerHTML='<div class="kdLog">Beratungsbesuche abgleichen …</div>';if(skip)await load();nachg=await besucheNachtragen(items)}}catch(err){}
+  var konfig=0,konfigFehler='';
+  for(var c=0;c<cfgs.length;c++){
+    var cr=await call('app_config_import',{config:cfgs[c].cfg});
+    if(cr.ok){konfig+=cr.saved||0;seen[cfgs[c].key]=1;S.cfg=null}else konfigFehler=cr.message||'Konfiguration konnte nicht übernommen werden.';
+  }
   gesehenSpeichern(seen);
-  return {neu:imp,vorhanden:skip,fehler:fail,unveraendert:skippedSeen,dateien:files.length,nachgetragen:nachg};
+  return {neu:imp,vorhanden:skip,fehler:fail,unveraendert:skippedSeen,dateien:files.length,nachgetragen:nachg,konfig:konfig,konfigFehler:konfigFehler};
 }
-function eingangText(r){return '<p><b>Fertig.</b> '+r.neu+' neue Akte(n) angelegt'+(r.vorhanden?', '+r.vorhanden+' gab es schon':'')+(r.nachgetragen?', '+r.nachgetragen+' Beratungsbesuch(e) aus Studio ergänzt':'')+(r.unveraendert?', '+r.unveraendert+' Datei(en) unverändert seit der letzten Prüfung':'')+(r.fehler.length?', '+r.fehler.length+' fehlgeschlagen':'')+'.</p>'+(r.fehler.length?'<div class="kdBox">'+esc(r.fehler.join('\n'))+'</div>':'')}
+function eingangText(r){return '<p><b>Fertig.</b> '+r.neu+' neue Akte(n) angelegt'+(r.vorhanden?', '+r.vorhanden+' gab es schon':'')+(r.nachgetragen?', '+r.nachgetragen+' Beratungsbesuch(e) aus Studio ergänzt':'')+(r.unveraendert?', '+r.unveraendert+' Datei(en) unverändert seit der letzten Prüfung':'')+(r.konfig?', Konfiguration übernommen ('+r.konfig+' Einträge)':'')+(r.fehler.length?', '+r.fehler.length+' fehlgeschlagen':'')+'.</p>'+(r.konfigFehler?'<div class="kdBox" style="color:#b91c1c">'+esc(r.konfigFehler)+'</div>':'')+(r.fehler.length?'<div class="kdBox">'+esc(r.fehler.join('\n'))+'</div>':'')}
 async function runEingang(){
   var host=$('#kdModalHost'),hasDir=!!window.showDirectoryPicker,saved=hasDir?await idbGet('eingangOrdner'):null;
   host.innerHTML='<div class="kdModalBg"><div class="kdModal small"><h3>Eingang aus Studio</h3><p style="color:var(--k-muted)">Studio legt neue Beratungskunden als Dateien im Ordner „Portal_Eingang“ ab (im Ordner Curafact Studio). Hier werden neue Kunden als Akte angelegt; vorhandene Akten bleiben unverändert (es werden nur Beratungsbesuche aus Studio ergänzt, die in der Akte noch fehlen).</p><div class="kdRow">'+
