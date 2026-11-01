@@ -1796,7 +1796,7 @@ $('submitBtn').onclick=async function(){
     try{sessionStorage.setItem(DKEY,JSON.stringify(o))}catch(e){}
   }
   function dQueue(){clearTimeout(dT);dT=setTimeout(dSave,400)}
-  document.addEventListener('input',dQueue);document.addEventListener('change',dQueue);
+  document.addEventListener('input',function(e){if(e.isTrusted)dQueue()});document.addEventListener('change',function(e){if(e.isTrusted)dQueue()});
   function dRestore(o){
     Object.keys(o.v).forEach(function(id){
       var e=g(id);if(!e)return;var x=o.v[id];
@@ -1835,6 +1835,11 @@ $('submitBtn').onclick=async function(){
     }).observe(g('msg'),{childList:true,characterData:true,subtree:true});
   }catch(e){}
 
+  /* Standard-Dauer 45 Minuten (änderbar; „bis“ wird daraus berechnet und lässt sich auch direkt ändern) */
+  (function(){
+    if(typeof EDIT_INDEX!=='undefined'&&EDIT_INDEX!==null)return;
+    var d=g('besuch_dauer');if(d&&!d.value){d.value='45';d.dispatchEvent(new Event('change',{bubbles:true}))}
+  })();
   show(1,true);
   var sp=Number(new URLSearchParams(location.search).get('step'));if(sp>1&&sp<=N)show(sp,true);
 })();
