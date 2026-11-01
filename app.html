@@ -1071,6 +1071,7 @@ window.BD=BD;
 .kdTable td{padding:10px;border-top:1px solid var(--k-border);vertical-align:top}
 .kdTable tr.row{cursor:pointer}.kdTable tr.row:hover{background:#f7fcfd}
 .kdTable tr.off td{opacity:.55}
+.kdTable th.kdSort{cursor:pointer;user-select:none;white-space:nowrap}.kdTable th.kdSort:hover,.kdTable th.kdSort.on{color:var(--teal,#16A9BA)}.kdArr{display:inline-block;min-width:12px;margin-left:5px;font-size:10px}
 .kdChip{font-size:12px;border-radius:999px;padding:2px 8px;background:#eef3f7;color:var(--k-muted);font-weight:700;white-space:nowrap;display:inline-block}
 .kdChip.ber{background:#efe3fb;color:#6a2fa3}
 .kdChip.late{background:#fde8e8;color:#b91c1c}
@@ -1110,6 +1111,7 @@ window.BD=BD;
 (function(){
 'use strict';
 var S={root:null,list:[],q:'',filter:'aktiv',loaded:false,cur:null,toastT:null,cfg:null};
+try{var _sv=JSON.parse(localStorage.getItem('kd_sort')||'null');if(_sv&&/^(name|kasse|termin|besuch)$/.test(_sv.key)&&(_sv.dir===1||_sv.dir===-1))S.sort=_sv}catch(e){}
 var KASSEN=['AOK NordWest','AOK NW','Barmer','DAK','TK','KKH','Knappschaft','HanseMerkur','IKK classic','BKK','Techniker Krankenkasse'];
 var ARTEN={nachweis:'Nachweis',vereinbarung:'Beratungsvereinbarung',datenschutz:'Datenschutzinformation',vollmacht:'Vollmacht',vertrag:'Vertrag',sonstiges:'Sonstiges'};
 function H(){return window.BD_HOST||{}}
@@ -1137,6 +1139,37 @@ function visible(k){
   if(S.q){var h=(k.name+' '+(s.kasse||'')+' '+(s.anschrift||'')).toLowerCase();if(h.indexOf(S.q.toLowerCase())<0)return false}
   return true;
 }
+/* Sortierung per Klick auf die Spaltenköpfe: 1. Klick aufsteigend, 2. Klick absteigend, 3. Klick zurück zur Standardreihenfolge; leere Werte stehen immer unten */
+function sortVal(k,key){
+  var s=k.summary||{},d;
+  if(key==='name')return String(k.name||'').toLowerCase();
+  if(key==='kasse')return String(s.kasse||'').toLowerCase();
+  if(key==='termin'){d=parseDe(s.naechster_termin);return d?d.getTime():null}
+  if(key==='besuch'){d=parseDe(s.letzter_besuch);return d?d.getTime():null}
+  return null;
+}
+function sortRows(rows){
+  if(!S.sort)return rows;
+  var key=S.sort.key,dir=S.sort.dir,byName=function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'de')};
+  return rows.slice().sort(function(a,b){
+    var x=sortVal(a,key),y=sortVal(b,key),ex=(x===null||x===''),ey=(y===null||y==='');
+    if(ex&&ey)return byName(a,b);
+    if(ex)return 1;
+    if(ey)return -1;
+    var c=typeof x==='number'?x-y:String(x).localeCompare(String(y),'de');
+    return c===0?byName(a,b):c*dir;
+  });
+}
+function setSort(key){
+  var c=S.sort;
+  if(!c||c.key!==key)S.sort={key:key,dir:1};else if(c.dir===1)S.sort={key:key,dir:-1};else S.sort=null;
+  try{localStorage.setItem('kd_sort',JSON.stringify(S.sort))}catch(e){}
+  render();
+}
+function sortTh(key,label,cls){
+  var on=S.sort&&S.sort.key===key;
+  return '<th data-sort="'+key+'" class="kdSort'+(cls?' '+cls:'')+(on?' on':'')+'" title="Nach '+label+' sortieren" aria-sort="'+(on?(S.sort.dir===1?'ascending':'descending'):'none')+'">'+label+'<span class="kdArr">'+(on?(S.sort.dir===1?'▲':'▼'):'')+'</span></th>';
+}
 function renderBar(){
   var f=function(id,l){return'<button class="kdBtn'+(S.filter===id?' on':'')+'" data-filter="'+id+'">'+l+'</button>'};
   var h=f('aktiv','Aktive')+f('beratung','Beratung')+f('inaktiv','Inaktive');
@@ -1148,12 +1181,12 @@ function renderBar(){
 }
 function render(){
   renderBar();
-  var rows=S.list.filter(visible);
+  var rows=sortRows(S.list.filter(visible));
   var heute0=new Date();heute0.setHours(0,0,0,0);var grenze=new Date(heute0.getTime()+21*86400000);
   var faellig=S.list.filter(function(k){var s=k.summary||{},t=parseDe(s.naechster_termin);return k.aktiv&&s.beratung&&t&&t<=grenze}).sort(function(a,b){return parseDe(a.summary.naechster_termin)-parseDe(b.summary.naechster_termin)});
   var fh='';
   if(faellig.length){fh='<div class="kdFaellig"><h4>Fällige Beratungstermine ('+faellig.length+')</h4>'+faellig.slice(0,12).map(function(k){var t=parseDe(k.summary.naechster_termin);return'<div class="it" data-id="'+k.id+'"><b>'+esc(k.name)+'</b><span class="kdChip'+(t<heute0?' late':'')+'">'+esc(k.summary.naechster_termin)+(t<heute0?' – überfällig':'')+'</span></div>'}).join('')+(faellig.length>12?'<div class="kdLog" style="margin-top:6px">… und '+(faellig.length-12)+' weitere (Liste unten nach „Nächster Termin“ prüfen)</div>':'')+'</div>'}
-  var h=fh+'<div style="overflow:auto"><table class="kdTable"><tr><th>Name</th><th>Kasse</th><th>PG</th><th>Nächster Termin</th><th class="kdHideM">Letzter Besuch</th><th class="kdHideM">Anschrift</th></tr>';
+  var h=fh+'<div style="overflow:auto"><table class="kdTable"><tr>'+sortTh('name','Name')+sortTh('kasse','Kasse')+'<th>PG</th>'+sortTh('termin','Nächster Termin')+sortTh('besuch','Letzter Besuch','kdHideM')+'<th class="kdHideM">Anschrift</th></tr>';
   var heute=new Date();heute.setHours(0,0,0,0);
   rows.forEach(function(k){
     var s=k.summary||{},t=parseDe(s.naechster_termin);
@@ -1570,6 +1603,7 @@ function bind(){
     if(el.id==='kdBoardSync'){el.disabled=true;el.textContent='Gleiche ab …';var bs=await call('kunden_board_sync',{});el.disabled=false;el.textContent='Board abgleichen';msg(bs.ok?(bs.angelegt+' Aufgabe(n) neu angelegt, '+bs.vorhanden+' gab es schon'+(bs.fehler?', '+bs.fehler+' Fehler':'')):(bs.message||'Abgleich fehlgeschlagen'),!bs.ok);return}
     if(el.id==='kdReload'){if(await load())render();return}
     if((x=el.closest('[data-filter]'))){S.filter=x.dataset.filter;render();return}
+    if((x=el.closest('th[data-sort]'))){setSort(x.dataset.sort);return}
     if((x=el.closest('tr.row,.kdFaellig .it'))){openKunde(x.dataset.id);return}
   });
   root.addEventListener('change',function(e){
