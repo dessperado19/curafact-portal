@@ -1,0 +1,77 @@
+/* ===== Curafact: Formularseiten (Aufnahme, Fernaufnahme) im Design „Redaktionell · Nebelblau“ ===== */
+:root{--bg:#EDF1F6;--card:#FAFBFD;--card2:#F0F3F8;--line:#D8E0EB;--text:#172033;--muted:#5C687D;--muted2:#414E65;--head:#11284B;--accent:#11284B;--accent-ink:#fff;--accent-soft:#E1E9F4;--accent2:#1496A8;--accent-text:#11284B;--ring:rgba(20,150,168,.2);--shadow:none;--radius:8px;--r-in:6px;--r-chip:6px;--r-btn:6px;--font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--font-head:"Iowan Old Style","Palatino Linotype",Palatino,"New York",Georgia,serif;--w:1060px;--pad:26px;--input-bg:#fff;--input-border:#C3CEDF;--chip:#fff;--hint-bg:#E7F1F6;--hint-line:#C8E0EA;--hint-text:#14586A;--bar-bg:rgba(237,241,246,.94);--nav-bg:transparent;--dot-bg:#EDF1F6;--dot-line:#C3CEDF;--ok:#2E8B57;--warn:#C27A13;--must:#C0392B;--ok-bg:#E7F2EB;--ok-fg:#1F5E3B;--warn-bg:#F8EDD6;--warn-fg:#7A4B07;--av-bg:#11284B;--av-fg:#EDF1F6;--h1s:38px;--h1w:600}
+/* ===== Gemeinsames Gerüst (Variablen kommen aus dem jeweiligen Stil) ===== */
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-text-size-adjust:100%;color-scheme:var(--scheme,light)}
+body{padding-bottom:40px;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.cfbar{height:var(--barH,4px);background:var(--bar,var(--accent2))}
+.cfhead{display:flex;justify-content:var(--headJ,center);padding:18px 16px 4px;max-width:var(--w);margin:0 auto;box-sizing:border-box}
+.cfhead img{height:34px;width:auto;display:block}
+.wrap{max-width:var(--w);margin:0 auto;padding:8px 16px 40px;box-sizing:border-box}
+h1{font-family:var(--font-head);font-size:var(--h1s,26px);line-height:1.15;font-weight:var(--h1w,700);color:var(--head);letter-spacing:-.02em;margin:12px 0 6px}
+.sub{font-size:15px;line-height:1.5;color:var(--muted);margin:0 0 20px}
+
+/* Karten */
+.box{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:var(--pad,22px);margin:0 0 16px;box-shadow:var(--shadow);box-sizing:border-box}
+.box h2{font-family:var(--font-head);font-size:17px;line-height:1.3;font-weight:650;color:var(--head);margin:0 0 14px;padding:0;border:0;letter-spacing:-.01em}
+.zif{display:block;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent2);background:none;padding:0;margin:0 0 4px;border-radius:0}
+.box .sub{font-size:14px;margin:0 0 10px}
+.note{font-size:12.5px;color:var(--muted);margin-top:8px}
+
+/* Formularfelder */
+label{display:block;font-size:13px;font-weight:600;color:var(--muted2,var(--muted));margin:14px 0 6px;letter-spacing:.005em}
+input[type=text],input[type=date],input[type=time],select,textarea{width:100%;min-width:0;box-sizing:border-box;min-height:48px;padding:12px 14px;border:1px solid var(--input-border);border-radius:var(--r-in);font-size:16px;font-family:inherit;color:var(--text);background:var(--input-bg);transition:border-color .15s,box-shadow .15s}
+textarea{min-height:120px;line-height:1.5;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 4px var(--ring)}
+::placeholder{color:var(--placeholder,#94a3b8)}
+.grid2{gap:0 14px}.grid3{gap:0 14px}
+
+/* Auswahl-Chips (Ja/Nein, Häuslichkeit/Video) */
+.radioRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.radioRow label{display:flex;align-items:center;gap:8px;margin:0;font-size:15px;font-weight:600;color:var(--text);padding:12px 18px;border:1px solid var(--input-border);border-radius:var(--r-chip);background:var(--input-bg);cursor:pointer;position:relative;min-height:48px;box-sizing:border-box}
+input[type=checkbox],input[type=radio]{-webkit-appearance:none;appearance:none;flex:none;width:22px;height:22px;border:1.5px solid var(--input-border);background:var(--input-bg);cursor:pointer;position:relative;margin:0}
+input[type=checkbox]{border-radius:7px}
+input[type=radio]{border-radius:50%}
+input[type=checkbox]:checked,input[type=radio]:checked{background:var(--accent);border-color:var(--accent)}
+input[type=checkbox]:checked::after{content:'';position:absolute;left:6.5px;top:2.5px;width:5px;height:10px;border:solid var(--accent-ink);border-width:0 2px 2px 0;transform:rotate(45deg)}
+input[type=radio]:checked::after{content:'';position:absolute;left:5.5px;top:5.5px;width:8px;height:8px;border-radius:50%;background:var(--accent-ink)}
+input:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+@supports selector(:has(*)){
+  .radioRow label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--accent-text,var(--accent))}
+  .radioRow input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+  .radioRow label:has(input:focus-visible){outline:2px solid var(--accent2);outline-offset:2px}
+}
+.checkline{display:flex;align-items:flex-start;gap:12px;font-size:15px;line-height:1.45;color:var(--text);margin:8px 0;padding:13px 14px;border:1px solid var(--line);border-radius:var(--r-in);background:var(--card2);cursor:pointer}
+.checkline input{margin-top:1px}
+.checkline span{flex:1}
+@supports selector(:has(*)){.checkline:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}}
+.mnGrid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px;margin-top:6px}
+.mnGrid .checkline{margin:5px 0;font-size:14px;padding:11px 12px}
+@media (max-width:520px){.mnGrid{grid-template-columns:1fr}.grid2,.grid3{grid-template-columns:1fr}}
+
+/* Buttons */
+button{font-family:inherit;font-weight:600;font-size:15px;border:0;border-radius:var(--r-btn);padding:12px 16px;cursor:pointer}
+.sigbar button,.fileBtnStyle,.docBtns button{background:var(--chip);color:var(--accent-text,var(--accent));border:1px solid var(--line);padding:10px 14px;font-size:14px;font-weight:600}
+.docBtns button.print{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tbBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.tbBar select{flex:1;min-width:170px;min-height:40px;padding:8px 12px;font-size:14px}
+.tbBar .kiBtn{padding:8px 13px!important;border-radius:999px!important;border:1px solid var(--line)!important;background:var(--chip)!important;color:var(--accent-text,var(--accent))!important;font-size:13px!important;font-weight:600!important}
+.tbCount{font-size:12px;color:var(--muted);margin-left:auto}
+.hint{background:var(--hint-bg);border:1px solid var(--hint-line);color:var(--hint-text);border-radius:var(--r-in);padding:11px 14px;font-size:13.5px;line-height:1.45;margin:10px 0}
+#sigFuerBox{background:var(--card2)!important;border:1px solid var(--line)!important;border-radius:var(--r-in)!important}
+#sigFuerBox b{color:var(--head)!important}
+.sigArea{margin-top:16px;padding-top:14px;border-top:1px dashed var(--input-border)}
+canvas{width:100%;height:190px;background:#fff;border:1.5px dashed var(--input-border);border-radius:var(--r-in);touch-action:none;display:block;margin-top:8px}
+.docCard{border:1px solid var(--line);border-radius:var(--r-in);padding:14px;margin-top:12px;background:var(--card2)}
+.docCard b{color:var(--head)}
+.fileStatusStyle{font-size:12.5px;color:var(--muted)}
+.mini{font-size:13px;color:var(--muted)}
+
+
+/* Formular-Seiten (Aufnahme, Beratung): ruhiger Kopf, links ausgerichtet */
+.cfbar{background:#14213A;height:3px}
+.cfhead{justify-content:flex-start}
+.wrap{max-width:760px}
+h1{font-size:30px}
+button:focus:not(:focus-visible){outline:none}
+#submitBtn{background:var(--accent)!important;color:var(--accent-ink)!important}
+.cffoot{color:var(--muted);text-align:center;font-size:12.5px;padding:0 16px 24px}
