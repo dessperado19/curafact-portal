@@ -151,6 +151,9 @@ function todayStr(){var d=new Date();return d.getFullYear()+'-'+String(d.getMont
 function ymd(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
 function curList(){return S.lists.find(function(l){return l.id===S.listId})||null}
 function statuses(l){var a=(l&&Array.isArray(l.statuses))?l.statuses.slice():[];var rank=function(s){return String(s.name).toLowerCase()==='nicht aktiv'?2:(s.type==='closed'?1:0)};return a.map(function(s,i){return[s,i]}).sort(function(x,y){return rank(x[0])-rank(y[0])||x[1]-y[1]}).map(function(x){return x[0]})}
+var STATUS_ANZEIGE={'to do':'Beratung offen','in progress':'In Beratung','warten':'Abrechnung','nachbearbeitung':'Zahlung offen','complete':'Abgeschlossen','nicht aktiv':'Nicht mehr aktiv'};
+/* Nur Anzeige: interne Statusnamen (ClickUp/Studio) bleiben unveraendert. Gilt nur fuer die Kundenliste (erkennbar am Status nachbearbeitung). */
+function statusAnzeige(l,name){var a=(l&&Array.isArray(l.statuses))?l.statuses:[];var kunden=a.some(function(z){return String(z.name).toLowerCase()==='nachbearbeitung'});var k=String(name).toLowerCase();return(kunden&&STATUS_ANZEIGE[k])?STATUS_ANZEIGE[k]:name}
 function isClosedStatus(l,s){var x=statuses(l).find(function(z){return z.name===s});return !!x&&(x.type==='closed'||x.type==='done')}
 function listOf(t){return S.lists.find(function(l){return l.id===t.list_id})}
 var PREFIX=['Pflegebedürftiger: ','Pflegeberatung: '];
@@ -226,7 +229,7 @@ function renderBoard(){
     var closed=s.type==='closed'||s.type==='done';
     cs.sort(closed?function(a,b){return String(b.closed_at||b.updated_at).localeCompare(String(a.closed_at||a.updated_at))}:function(a,b){return a.position-b.position});
     var lim=closed?(S.more[s.name]||15):9999;
-    h+='<div class="bdCol" data-status="'+esc(s.name)+'"><div class="bdColHead"><span class="bdDot" style="background:'+esc(s.color||'#66788a')+'"></span>'+esc(s.name)+'<span class="bdCount">'+cs.length+'</span><button class="bdAdd" data-add="'+esc(s.name)+'" title="Aufgabe hinzufügen">+</button></div><div class="bdCards">';
+    h+='<div class="bdCol" data-status="'+esc(s.name)+'"><div class="bdColHead"><span class="bdDot" style="background:'+esc(s.color||'#66788a')+'"></span>'+esc(statusAnzeige(l,s.name))+'<span class="bdCount">'+cs.length+'</span><button class="bdAdd" data-add="'+esc(s.name)+'" title="Aufgabe hinzufügen">+</button></div><div class="bdCards">';
     h+='<div class="bdQuickHost"></div>';
     cs.slice(0,lim).forEach(function(t){h+=cardHtml(t)});
     if(cs.length>lim)h+='<button class="bdMore" data-more="'+esc(s.name)+'">'+(cs.length-lim)+' weitere anzeigen</button>';
@@ -244,7 +247,7 @@ function renderList(){
   var h='<div style="overflow:auto"><table class="bdTable"><tr><th>Aufgabe</th><th>Status</th><th>Fällig</th><th>Zugewiesen</th><th>Checkliste</th></tr>';
   tasks.forEach(function(t){
     var s=statuses(l).find(function(z){return z.name===t.status})||{};
-    h+='<tr class="row" data-id="'+t.id+'"><td><b>'+esc(shownTitle(t))+'</b>'+((t.tags||[]).map(function(g){return' <span class="bdChip tag">'+esc(g)+'</span>'}).join(''))+'</td><td><span class="bdDot" style="display:inline-block;background:'+esc(s.color||'#66788a')+'"></span> '+esc(t.status)+'</td><td>'+fmtDate(t.due_date)+'</td><td>'+(t.assignees||[]).map(function(u){return esc(userName(u))}).join(', ')+'</td><td>'+(t.chk_total?t.chk_done+'/'+t.chk_total:'')+'</td></tr>';
+    h+='<tr class="row" data-id="'+t.id+'"><td><b>'+esc(shownTitle(t))+'</b>'+((t.tags||[]).map(function(g){return' <span class="bdChip tag">'+esc(g)+'</span>'}).join(''))+'</td><td><span class="bdDot" style="display:inline-block;background:'+esc(s.color||'#66788a')+'"></span> '+esc(statusAnzeige(l,t.status))+'</td><td>'+fmtDate(t.due_date)+'</td><td>'+(t.assignees||[]).map(function(u){return esc(userName(u))}).join(', ')+'</td><td>'+(t.chk_total?t.chk_done+'/'+t.chk_total:'')+'</td></tr>';
   });
   $('#bdBody').innerHTML=h+'</table></div>'+(tasks.length?'':'<div class="bdEmpty" style="margin-top:10px">Keine Aufgaben.</div>');
 }
@@ -374,7 +377,7 @@ function drawTask(){
   var scroll=($('.bdModalBg')||{}).scrollTop||0;
   var h='<div class="bdModalBg" id="bdTaskBg"><div class="bdModal">';
   h+='<div class="bdRow"><input class="bdTitleIn" id="tTitle" value="'+esc(t.title)+'"><button class="bdBtn" id="tClose">Schließen</button></div>';
-  h+='<div class="bdGrid"><div><label>Status</label><select id="tStatus">'+statuses(l).map(function(s){return'<option'+(s.name===t.status?' selected':'')+'>'+esc(s.name)+'</option>'}).join('')+'</select></div>';
+  h+='<div class="bdGrid"><div><label>Status</label><select id="tStatus">'+statuses(l).map(function(s){return'<option value="'+esc(s.name)+'"'+(s.name===t.status?' selected':'')+'>'+esc(statusAnzeige(l,s.name))+'</option>'}).join('')+'</select></div>';
   h+='<div><label>Fällig am</label><input type="date" id="tDue" value="'+esc(t.due_date||'')+'"></div>';
   h+='<div><label>Priorität</label><select id="tPrio"><option value="">–</option>'+Object.keys(PRIO).map(function(k){return'<option value="'+k+'"'+(t.priority===k?' selected':'')+'>'+PRIO[k][0]+'</option>'}).join('')+'</select></div>';
   h+='<div><label>Liste</label><input type="text" value="'+esc((l||{}).name||'')+'" disabled></div></div>';
