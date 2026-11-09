@@ -936,6 +936,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=DOK;
 })(typeof window!=='undefined'?window:globalThis);
 </script>
 <!--DK:END-->
+<script src="cf-sigpad.js?v=1"></script>
 <script>
 var LOCAL=/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 var API=LOCAL?(location.protocol+'//'+location.hostname+':8799'):'https://vdqumlxjmgqrmwlxqwre.supabase.co/functions/v1/studio-api';
@@ -1079,9 +1080,25 @@ function setupSigInput(prefix){
   function resize(){var r=canvas.getBoundingClientRect();var d=Math.max(2,window.devicePixelRatio||2);canvas.width=Math.round(r.width*d);canvas.height=Math.round(r.height*d)}
   resize();
   var hasDrawing=false, uploadedDataUrl=null;
-  attachSmoothPen(canvas,{beforeDraw:function(){if(canvas.width<20)resize()},onStart:function(){hasDrawing=true;uploadedDataUrl=null}});
+  var fenster=!!window.SignaturFenster;
+  if(!fenster)attachSmoothPen(canvas,{beforeDraw:function(){if(canvas.width<20)resize()},onStart:function(){hasDrawing=true;uploadedDataUrl=null}});
 
   var fileBtn=$('sigfilebtn_'+prefix), fileInput=$('sigfile_'+prefix), fileStatus=$('sigfilestatus_'+prefix), preview=$('sigpreview_'+prefix);
+  var openBtn=null;
+  function sigTitel(){var T={pflege:'Unterschrift pflegebedürftige Person',berater:'Unterschrift Berater/in',main:'Unterschrift pflegebedürftige Person',helper:'Unterschrift Nachbarschaftshilfe',vereinb:'Unterschrift für die Vereinbarung'};if(T[prefix])return T[prefix];if(/^h\d+$/.test(prefix))return 'Unterschrift '+prefix.slice(1)+'. Nachbarschaftshilfe';return 'Unterschrift'}
+  function sigOeffnen(){
+    if(!fenster)return;
+    SignaturFenster.oeffnen(sigTitel(),function(url){
+      uploadedDataUrl=url;hasDrawing=false;fileInput.value='';
+      fileStatus.textContent='Unterschrift erfasst';preview.src=url;preview.classList.remove('hidden');
+      if(openBtn){openBtn.textContent='✍ Neu unterschreiben';openBtn.classList.add('done')}
+    });
+  }
+  if(fenster){
+    canvas.style.display='none';
+    openBtn=document.createElement('button');openBtn.type='button';openBtn.className='sigOpenBtn';openBtn.textContent='✍ Unterschrift hinzufügen';
+    openBtn.onclick=sigOeffnen;canvas.parentNode.insertBefore(openBtn,canvas);
+  }
   fileBtn.onclick=function(){fileInput.click()};
   fileInput.onchange=function(){
     var f=fileInput.files[0];
@@ -1105,6 +1122,7 @@ function setupSigInput(prefix){
     fileStatus.textContent='Keine Datei ausgewählt';
     preview.classList.add('hidden');
     preview.src='';
+    if(openBtn){openBtn.textContent='✍ Unterschrift hinzufügen';openBtn.classList.remove('done')}
   };
   return {
     hasFn:function(){return hasDrawing || !!uploadedDataUrl},
@@ -1113,7 +1131,7 @@ function setupSigInput(prefix){
       uploadedDataUrl=du;hasDrawing=false;
       ctx.clearRect(0,0,canvas.width,canvas.height);
       fileStatus.textContent=name||'Gespeicherte Unterschrift';
-      preview.src=du;preview.classList.remove('hidden');
+      preview.src=du;preview.classList.remove('hidden');if(openBtn){openBtn.textContent='✍ Neu unterschreiben';openBtn.classList.add('done')}
     }
   };
 }
