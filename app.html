@@ -39,12 +39,13 @@ button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
 <div class="wrap hidden" id="app">
   <aside id="side">
     <div id="head"><img src="logo.png" alt="Curafact"></div>
-    <div id="nav"><button data-tab="kunden">Kunden</button><button data-tab="board">Board</button><button data-tab="mitarbeiter" id="navMa" class="hidden">Mitarbeiter</button></div>
+    <div id="nav"><button data-tab="kunden">Kunden</button><button data-tab="board">Board</button><button data-tab="notizbuch" id="navNb" class="hidden">Notizbuch</button><button data-tab="mitarbeiter" id="navMa" class="hidden">Mitarbeiter</button></div>
     <div class="sideBottom"><span class="who" id="who"></span><button id="logout">Abmelden</button></div>
   </aside>
   <main id="mainArea">
     <div id="tab-kunden"><div id="kdRoot"></div></div>
     <div id="tab-board" class="hidden"><div id="bdRoot"></div></div>
+    <div id="tab-notizbuch" class="hidden"><div id="nbRoot"></div></div>
     <div id="tab-mitarbeiter" class="hidden"><div id="maRoot"></div></div>
   </main>
 </div>
@@ -1714,6 +1715,172 @@ window.MA={
 })();
 </script>
 <!--MA:END-->
+<!--NB:START-->
+<script>
+(function(){
+'use strict';
+var S={root:null,bereiche:[],eintraege:[],admin:false,aktiv:null,suche:'',loaded:false,zugriff:null};
+function H(){return window.BD_HOST||{}}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function $(s,r){return (r||S.root).querySelector(s)}
+async function call(a,p){try{var r=await H().call(a,p||{});return r||{ok:false,message:'Keine Antwort vom Server.'}}catch(e){return{ok:false,message:'Fehler: '+e}}}
+function msg(t,err){var el=$('.nbToast');if(!el)return;el.textContent=t;el.className='nbToast'+(err?' err':'');el.style.display='block';clearTimeout(S.tt);S.tt=setTimeout(function(){el.style.display='none'},err?6000:2800)}
+var TRAEGER={'':'Rechtsträger offen',ev:'Curafact Alltagshilfe e.V.',ug:'Curafact PflegeAbrechnung Direkt UG',beide:'e.V. und UG',privat:'Privat / keine Firma'};
+var TR_KURZ={'':'offen',ev:'e.V.',ug:'UG',beide:'e.V. + UG',privat:'privat'};
+var RHYTHMUS=['','monatlich','vierteljährlich','jährlich','einmalig','offen'];
+var AVV=['','vorhanden','angefragt','fehlt','nicht nötig'];
+var HINWEIS_PW='Hier stehen keine Passwörter. Passwörter liegen nur im Passwort-Manager; im Notizbuch steht nur, wo der Zugang ist und wer ihn hat.';
+var B={
+ wo_liegt_was:{t:'Wo liegt was',h:'Daten, Ordner, Systeme und Sicherungen.',f:[['ort','Ort / System'],['wer_zugriff','Wer hat Zugriff'],['backup','Sicherung']]},
+ software:{t:'Software und Dienste',h:'Alles, was ihr nutzt.',f:[['anbieter','Anbieter'],['verantwortlich','Verantwortlich'],['adresse','Adresse / Login-Seite']]},
+ abos:{t:'Abos und Kosten',h:'Betrag, Rhythmus, wer zahlt, Kündigungsfrist.',f:[['betrag','Betrag in € (brutto)'],['rhythmus','Rhythmus',RHYTHMUS],['zahlungsart','Zahlungsart'],['kuendigungsfrist','Kündigungsfrist'],['naechste_verlaengerung','Nächste Verlängerung','date']]},
+ anleitungen:{t:'Anleitungen',h:'Schritt für Schritt erklärt.',f:[['fuer_wen','Für wen / wann']]},
+ formulare:{t:'Formulare und Briefköpfe',h:'Vorlagen und wo sie liegen.',f:[['ablage','Ablageort'],['stand','Stand / Version']]},
+ nachweise:{t:'Nachweise',h:'Anerkennungen, Versicherungen, Verträge.',f:[['aussteller','Aussteller / Gegenstelle'],['gueltig_bis','Gültig bis','date'],['ablage','Ablageort']]},
+ zugaenge:{t:'Zugänge',h:HINWEIS_PW,pw:true,f:[['benutzername','Benutzername / Mail'],['wer_zugriff','Wer hat Zugriff'],['zwei_faktor','2-Faktor (Gerät / App)'],['tresor_ordner','Ordner im Passwort-Manager']]},
+ kontakte:{t:'Kontakte',h:'Ansprechpartner bei Kassen, Behörden und Dienstleistern.',f:[['ansprechpartner','Ansprechpartner'],['telefon','Telefon'],['email','E-Mail']]},
+ fristen:{t:'Fristen',h:'Was wann zu tun ist.',f:[['faellig_am','Fällig am','date'],['wiederkehrend','Wiederkehrend']]},
+ notfall:{t:'Notfall und Vertretung',h:'Wer macht was, wenn jemand ausfällt.',f:[['verantwortlich','Verantwortlich'],['vertretung','Vertretung']]},
+ nummern:{t:'Nummern',h:'IK, Schlüssel, Steuernummern. Nur freigeben, wenn nötig.',f:[['nummer','Nummer'],['gilt_fuer','Gilt für']]},
+ checklisten:{t:'Checklisten',h:'Einstieg und Ausscheiden von Mitarbeitern u. a.',f:[['fuer_wen','Für wen / wann']]},
+ datenschutz:{t:'Datenschutz',h:'Anbieter, Verträge (AVV) und Unterlagen.',f:[['anbieter','Anbieter'],['avv','AVV-Status',AVV],['stand','Stand']]},
+ entscheidungen:{t:'Entscheidungen',h:'Was wurde warum entschieden.',f:[['entschieden_am','Entschieden am','date'],['entschieden_von','Entschieden von']]}
+};
+var ORDER=['wo_liegt_was','software','abos','anleitungen','formulare','nachweise','zugaenge','kontakte','fristen','notfall','nummern','checklisten','datenschutz','entscheidungen'];
+function bt(id){return (B[id]||{}).t||id}
+function fmtDate(v){if(!v)return'';var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v);return m?m[3]+'.'+m[2]+'.'+m[1]:v}
+function linkify(t){return esc(t).replace(/(https?:\/\/[^\s<]+)/g,function(u){return '<a href="'+u+'" target="_blank" rel="noopener noreferrer">'+u+'</a>'})}
+function css(){
+ if(document.getElementById('nbCss'))return;
+ var st=document.createElement('style');st.id='nbCss';
+ st.textContent='.nb{max-width:1100px}.nbHead h2{margin:0 0 4px;color:var(--navy,#0F3F7A);display:flex;align-items:center;gap:10px}.nbHead h2:before{content:"";width:8px;height:22px;background:var(--teal,#16A9BA);border-radius:3px}.nbHead p{margin:0 0 14px;color:#51606d}'+
+ '.nbBar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;align-items:center}.nbBar input[type=search]{flex:1;min-width:200px;padding:10px 12px;border:1px solid #cfe9ee;border-radius:10px;background:#f3f9fd}'+
+ '.nbTabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}.nbTab{border:1px solid #cfe9ee;background:#fff;border-radius:999px;padding:7px 14px;font-size:14px;cursor:pointer;color:var(--navy,#0F3F7A)}.nbTab.on{background:var(--navy,#0F3F7A);border-color:var(--navy,#0F3F7A);color:#fff}'+
+ '.nbBtn{border:1px solid #cfe9ee;background:#fff;border-radius:10px;padding:8px 14px;cursor:pointer;font-size:14px}.nbBtn:hover{border-color:var(--teal,#16A9BA)}.nbBtn.primary{background:var(--navy,#0F3F7A);border-color:var(--navy,#0F3F7A);color:#fff}.nbBtn.danger{color:#b91c1c}'+
+ '.nbHint{background:#fff8e6;border:1px solid #f0dca0;color:#6b5200;border-radius:10px;padding:9px 12px;margin:0 0 14px;font-size:14px}.nbSum{background:#f3fafc;border:1px solid #cfe9ee;border-radius:10px;padding:9px 12px;margin:0 0 14px;font-size:14px}'+
+ '.nbCard{background:#fff;border:1px solid #cfe9ee;border-radius:14px;padding:14px 16px;margin:0 0 12px}.nbCard h4{margin:0 0 6px;color:var(--navy,#0F3F7A);display:flex;gap:8px;align-items:center;flex-wrap:wrap}.nbChip{font-size:12px;border-radius:999px;padding:2px 9px;background:#e8f6f8;color:#0b5a66;font-weight:600}.nbChip.bereich{background:#eef0f6;color:#334}'+
+ '.nbGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:6px 18px;margin:8px 0}.nbGrid b{display:block;font-size:12px;color:#51606d;text-transform:uppercase;letter-spacing:.03em}.nbText{white-space:pre-wrap;margin:8px 0 0;line-height:1.5}.nbAct{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}'+
+ '.nbEmpty{color:#51606d;padding:18px 4px}.nbToast{position:fixed;right:18px;bottom:18px;background:#0F3F7A;color:#fff;border-radius:10px;padding:10px 16px;z-index:60}.nbToast.err{background:#b91c1c}'+
+ '.nbModalBg{position:fixed;inset:0;background:rgba(10,30,50,.45);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 12px;z-index:50}.nbModal{background:#fff;border-radius:16px;padding:20px;width:min(640px,100%)}.nbModal h3{margin:0 0 10px;color:var(--navy,#0F3F7A)}.nbModal label{display:block;font-size:13px;color:#51606d;margin:10px 0 3px}.nbModal input,.nbModal select,.nbModal textarea{width:100%;padding:9px 10px;border:1px solid #cfe9ee;border-radius:10px;background:#f3f9fd;font:inherit;box-sizing:border-box}.nbModal textarea{min-height:150px}.nbRow{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}'+
+ '.nbTable{width:100%;border-collapse:collapse;font-size:14px}.nbTable th{background:#f3fafc;color:var(--navy,#0F3F7A);text-align:left;padding:8px;font-size:12px}.nbTable td{padding:8px;border-top:1px solid #e3f1f4;vertical-align:top}.nbTable td.c,.nbTable th.c{text-align:center}';
+ document.head.appendChild(st);
+}
+function shell(){
+ css();
+ S.root.innerHTML='<div class="nb"><div class="nbHead"><h2>Notizbuch</h2><p>Wo was liegt, welche Software und Abos wir haben und wie Dinge gemacht werden. Keine Passwörter – die liegen im Passwort-Manager.</p></div><div id="nbBody"><div class="nbEmpty">Lade …</div></div><div class="nbToast" style="display:none"></div><div id="nbModalHost"></div></div>';
+}
+async function load(){
+ var r=await call('nb_list');
+ if(!r.ok){$('#nbBody').innerHTML='<div class="nbEmpty">'+esc(r.message||'Notizbuch konnte nicht geladen werden.')+'</div>';return}
+ S.bereiche=ORDER.filter(function(x){return (r.bereiche||[]).indexOf(x)>=0});
+ S.eintraege=r.eintraege||[];S.admin=!!r.admin;S.loaded=true;
+ if(S.aktiv!=='__freigaben'&&S.bereiche.indexOf(S.aktiv)<0)S.aktiv=S.bereiche[0]||null;
+ render();
+}
+function matches(e,q){
+ var hay=[e.titel,e.text,e.link,e.traeger,TRAEGER[e.traeger]].concat(Object.keys(e.felder||{}).map(function(k){return e.felder[k]})).join(' ').toLowerCase();
+ return hay.indexOf(q)>=0;
+}
+function num(v){var s=String(v||'').replace(/[^\d,.\-]/g,'');if(!s)return null;if(s.indexOf(',')>=0)s=s.replace(/\./g,'').replace(',','.');var n=parseFloat(s);return isNaN(n)?null:n}
+function summe(list){
+ var per={};var offen=0;
+ list.forEach(function(e){var f=e.felder||{},n=num(f.betrag);if(n==null){offen++;return}
+  var fak={monatlich:1,'vierteljährlich':1/3,'jährlich':1/12}[f.rhythmus];if(!fak){if(f.rhythmus!=='einmalig')offen++;return}
+  var k=TR_KURZ[e.traeger||''];per[k]=(per[k]||0)+n*fak});
+ var teile=Object.keys(per).map(function(k){return k+': '+per[k].toFixed(2).replace('.',',')+' € / Monat'});
+ if(!teile.length)return '';
+ return '<div class="nbSum"><b>Laufende Kosten (umgerechnet):</b> '+esc(teile.join(' · '))+(offen?' · '+offen+' Eintrag/Einträge ohne vollständige Angabe':'')+'</div>';
+}
+function karte(e,mitBereich){
+ var meta=B[e.bereich]||{f:[]},f=e.felder||{};
+ var grid=meta.f.map(function(d){var v=f[d[0]];if(!v)return'';return '<div><b>'+esc(d[1])+'</b>'+esc(d[2]==='date'||d[3]==='date'?fmtDate(v):v)+'</div>'}).join('');
+ return '<div class="nbCard"><h4>'+esc(e.titel)+(mitBereich?' <span class="nbChip bereich">'+esc(bt(e.bereich))+'</span>':'')+' <span class="nbChip">'+esc(TRAEGER[e.traeger||'']||'')+'</span></h4>'+
+  (grid?'<div class="nbGrid">'+grid+'</div>':'')+(e.text?'<div class="nbText">'+linkify(e.text)+'</div>':'')+
+  (e.link?'<div class="nbAct"><a class="nbBtn" href="'+esc(e.link)+'" target="_blank" rel="noopener noreferrer">Öffnen ↗</a></div>':'')+
+  (S.admin?'<div class="nbAct"><button class="nbBtn" data-edit="'+esc(e.id)+'">Bearbeiten</button><button class="nbBtn danger" data-del="'+esc(e.id)+'">Löschen</button></div>':'')+'</div>';
+}
+function render(){
+ var tabs=S.bereiche.map(function(id){return '<button class="nbTab'+(S.aktiv===id&&!S.suche?' on':'')+'" data-tab="'+id+'">'+esc(bt(id))+'</button>'}).join('')+(S.admin?'<button class="nbTab'+(S.aktiv==='__freigaben'&&!S.suche?' on':'')+'" data-tab="__freigaben">Freigaben</button>':'');
+ var q=S.suche.trim().toLowerCase(),html='';
+ var bar='<div class="nbBar"><input type="search" id="nbSuche" placeholder="Im ganzen Notizbuch suchen …" value="'+esc(S.suche)+'">'+(S.admin&&S.aktiv&&S.aktiv!=='__freigaben'&&!q?'<button class="nbBtn primary" id="nbNeu">+ Neuer Eintrag</button>':'')+'</div>';
+ if(!S.bereiche.length&&!S.admin){$('#nbBody').innerHTML='<div class="nbEmpty">Für dein Konto ist noch kein Bereich freigegeben.</div>';return}
+ if(q){
+  var tr=S.eintraege.filter(function(e){return matches(e,q)});
+  html=tr.length?tr.map(function(e){return karte(e,true)}).join(''):'<div class="nbEmpty">Nichts gefunden.</div>';
+ }else if(S.aktiv==='__freigaben'){
+  html='<div id="nbFrei"><div class="nbEmpty">Lade …</div></div>';
+ }else{
+  var meta=B[S.aktiv]||{},list=S.eintraege.filter(function(e){return e.bereich===S.aktiv});
+  html=(meta.h?'<div class="'+(meta.pw?'nbHint':'nbEmpty')+'" style="'+(meta.pw?'':'padding:0 0 12px')+'">'+esc(meta.h)+'</div>':'')+(S.aktiv==='abos'?summe(list):'')+
+   (list.length?list.map(function(e){return karte(e,false)}).join(''):'<div class="nbEmpty">Noch keine Einträge.'+(S.admin?' Mit „+ Neuer Eintrag“ anlegen.':'')+'</div>');
+ }
+ var had=document.activeElement&&document.activeElement.id==='nbSuche';
+ $('#nbBody').innerHTML='<div class="nbTabs">'+tabs+'</div>'+bar+html;
+ if(had){var el=$('#nbSuche');el.focus();el.setSelectionRange(el.value.length,el.value.length)}
+ if(!q&&S.aktiv==='__freigaben')loadFreigaben();
+}
+async function loadFreigaben(){
+ var r=await call('nb_zugriff_list');var host=$('#nbFrei');if(!host)return;
+ if(!r.ok){host.innerHTML='<div class="nbEmpty">'+esc(r.message||'Freigaben konnten nicht geladen werden.')+'</div>';return}
+ S.zugriff=r;
+ var users=(r.users||[]).filter(function(u){return u.role==='user'});
+ if(!users.length){host.innerHTML='<div class="nbEmpty">Es gibt noch keine Mitarbeiter-Konten. Admins sehen immer alles.</div>';return}
+ host.innerHTML='<div class="nbSum">Admins sehen immer alle Bereiche. Hier legst du fest, was einzelne Mitarbeiter <b>nur lesen</b> dürfen. Änderungen gelten sofort.</div><div style="overflow:auto"><table class="nbTable"><thead><tr><th>Mitarbeiter</th>'+ORDER.map(function(id){return '<th class="c">'+esc(bt(id))+'</th>'}).join('')+'</tr></thead><tbody>'+users.map(function(u){
+  return '<tr class="'+(u.active?'':'off')+'"><td><b>'+esc(u.display_name||u.username)+'</b><br><small>'+esc(u.username)+(u.active?'':' (deaktiviert)')+'</small></td>'+ORDER.map(function(id){return '<td class="c"><input type="checkbox" data-frei="'+esc(u.username)+'" data-b="'+id+'"'+((u.bereiche||[]).indexOf(id)>=0?' checked':'')+'></td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div>';
+}
+function modal(e){
+ var neu=!e.id,meta=B[e.bereich]||{f:[]},f=e.felder||{};
+ var felder=meta.f.map(function(d){
+  var k=d[0],opt=Array.isArray(d[2])?d[2]:null,typ=d[2]==='date'||d[3]==='date'?'date':'text';
+  var inp=opt?'<select data-f="'+k+'">'+opt.map(function(o){return '<option value="'+esc(o)+'"'+((f[k]||'')===o?' selected':'')+'>'+esc(o||'– offen –')+'</option>'}).join('')+'</select>':'<input data-f="'+k+'" type="'+typ+'" value="'+esc(f[k]||'')+'" autocomplete="off">';
+  return '<label>'+esc(d[1])+'</label>'+inp}).join('');
+ $('#nbModalHost').innerHTML='<div class="nbModalBg"><div class="nbModal"><h3>'+(neu?'Neuer Eintrag':'Eintrag bearbeiten')+' · '+esc(bt(e.bereich))+'</h3>'+(meta.pw?'<div class="nbHint">'+esc(HINWEIS_PW)+'</div>':'')+
+  '<label>Titel</label><input id="nbTitel" value="'+esc(e.titel||'')+'" autocomplete="off">'+
+  '<label>Rechtsträger</label><select id="nbTraeger">'+Object.keys(TRAEGER).map(function(k){return '<option value="'+k+'"'+((e.traeger||'')===k?' selected':'')+'>'+esc(TRAEGER[k])+'</option>'}).join('')+'</select>'+
+  felder+'<label>Link</label><input id="nbLink" type="url" placeholder="https://…" value="'+esc(e.link||'')+'">'+
+  '<label>Beschreibung / Anleitung</label><textarea id="nbText">'+esc(e.text||'')+'</textarea>'+
+  '<div class="nbRow"><button class="nbBtn" id="nbAbbruch">Abbrechen</button><button class="nbBtn primary" id="nbSpeichern">Speichern</button></div></div></div>';
+ $('#nbAbbruch').onclick=function(){$('#nbModalHost').innerHTML=''};
+ $('#nbSpeichern').onclick=async function(){
+  var felderOut={};Array.prototype.forEach.call(document.querySelectorAll('#nbModalHost [data-f]'),function(el){felderOut[el.dataset.f]=el.value.trim()});
+  var btn=this;btn.disabled=true;
+  var r=await call('nb_save',{id:e.id||null,bereich:e.bereich,titel:$('#nbTitel').value,traeger:$('#nbTraeger').value,link:$('#nbLink').value,text:$('#nbText').value,felder:felderOut});
+  btn.disabled=false;
+  if(!r.ok){msg(r.message||'Speichern fehlgeschlagen.',true);return}
+  $('#nbModalHost').innerHTML='';msg('Gespeichert');load();
+ };
+}
+function bind(){
+ S.root.addEventListener('click',async function(ev){
+  var el=ev.target,x;
+  if((x=el.closest('[data-tab]'))){S.aktiv=x.dataset.tab;S.suche='';render();return}
+  if(el.id==='nbNeu'){modal({bereich:S.aktiv,felder:{}});return}
+  if((x=el.closest('[data-edit]'))){var e=S.eintraege.filter(function(i){return i.id===x.dataset.edit})[0];if(e)modal(e);return}
+  if((x=el.closest('[data-del]'))){
+   var d=S.eintraege.filter(function(i){return i.id===x.dataset.del})[0];if(!d)return;
+   if(!confirm('Eintrag „'+d.titel+'“ löschen?'))return;
+   var r=await call('nb_delete',{id:d.id});if(!r.ok){msg(r.message||'Löschen fehlgeschlagen.',true);return}
+   msg('Gelöscht');load();return;
+  }
+ });
+ S.root.addEventListener('input',function(ev){if(ev.target.id==='nbSuche'){S.suche=ev.target.value;render()}});
+ S.root.addEventListener('change',async function(ev){
+  var el=ev.target;if(!el.dataset||!el.dataset.frei)return;
+  var user=el.dataset.frei,liste=[];
+  Array.prototype.forEach.call(S.root.querySelectorAll('input[data-frei]'),function(c){if(c.dataset.frei===user&&c.checked)liste.push(c.dataset.b)});
+  el.disabled=true;var r=await call('nb_zugriff_set',{username:user,bereiche:liste});el.disabled=false;
+  if(!r.ok){el.checked=!el.checked;msg(r.message||'Freigabe konnte nicht gespeichert werden.',true);return}
+  msg('Freigabe gespeichert');
+ });
+}
+window.NB={
+ async init(rootEl){S.root=rootEl;shell();bind();await load()},
+ async show(){if(!S.root)return;await load()},
+ async hatInhalt(){var r=await call('nb_list');return !!(r&&r.ok&&((r.bereiche||[]).length||r.admin))}
+};
+})();
+</script>
+<!--NB:END-->
 <script>
 (function(){
   var LOCAL=/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
@@ -1725,7 +1892,7 @@ window.MA={
   function show(app){document.getElementById('login').classList.toggle('hidden',app);document.getElementById('app').classList.toggle('hidden',!app)}
   function logout(msg){
     if(sess){fetch(API,{method:'POST',headers:{'Content-Type':'application/json','x-curafact-session':sess.token},body:JSON.stringify({action:'logout'})}).catch(function(){})}
-    sess=null;save();show(false);if(window.BD)BD.stop();started={};document.getElementById('bdRoot').innerHTML='';document.getElementById('kdRoot').innerHTML='';document.getElementById('maRoot').innerHTML='';
+    sess=null;save();show(false);if(window.BD)BD.stop();started={};document.getElementById('bdRoot').innerHTML='';document.getElementById('kdRoot').innerHTML='';document.getElementById('maRoot').innerHTML='';document.getElementById('nbRoot').innerHTML='';
     document.getElementById('loginErr').textContent=msg||'';document.getElementById('code').value='';
   }
   function touch(){if(sess){sess.last=Date.now();save()}}
@@ -1746,10 +1913,10 @@ window.MA={
     openUrl:function(u){window.open(u,'_blank')}
   };
   function tab(name){
-    ['kunden','board','mitarbeiter'].forEach(function(t){document.getElementById('tab-'+t).classList.toggle('hidden',t!==name)});
+    ['kunden','board','notizbuch','mitarbeiter'].forEach(function(t){document.getElementById('tab-'+t).classList.toggle('hidden',t!==name)});
     document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===name)});
     try{history.replaceState(null,'',location.pathname+location.search+'#'+name)}catch(e){}
-    var M=name==='board'?BD:(name==='mitarbeiter'?MA:KD),rid=name==='board'?'bdRoot':(name==='mitarbeiter'?'maRoot':'kdRoot');
+    var M=name==='board'?BD:(name==='mitarbeiter'?MA:(name==='notizbuch'?NB:KD)),rid=name==='board'?'bdRoot':(name==='mitarbeiter'?'maRoot':(name==='notizbuch'?'nbRoot':'kdRoot'));
     if(!started[name]){started[name]=true;M.init(document.getElementById(rid))}
     else M.show();
   }
@@ -1760,7 +1927,10 @@ window.MA={
     document.getElementById('navMa').classList.toggle('hidden',!window.BD_HOST.isAdmin);
     var want=(location.hash||'').replace('#','');
     if(/[?&]task=/.test(location.search))want='board';
-    tab(want==='board'?'board':(want==='mitarbeiter'&&window.BD_HOST.isAdmin?'mitarbeiter':'kunden'));
+    var nbOk=window.BD_HOST.isAdmin;
+    if(nbOk)document.getElementById('navNb').classList.remove('hidden');
+    else NB.hatInhalt().then(function(ok){if(ok&&sess){document.getElementById('navNb').classList.remove('hidden');if(want==='notizbuch')tab('notizbuch')}});
+    tab(want==='board'?'board':(want==='mitarbeiter'&&window.BD_HOST.isAdmin?'mitarbeiter':(want==='notizbuch'&&nbOk?'notizbuch':'kunden')));
   }
   document.getElementById('logout').onclick=function(){logout('')};
   document.getElementById('loginForm').addEventListener('submit',async function(e){
